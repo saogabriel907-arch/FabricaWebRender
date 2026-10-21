@@ -1,0 +1,64 @@
+@model IEnumerable<FabricaWebRender.Models.InsumoEstoqueViewModel>
+
+@{
+    ViewData["Title"] = "Painel de Estoque - Fábrica";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold text-dark">📦 Painel de Estoque em Tempo Real</h2>
+            <p class="text-muted">Dados sincronizados diretamente do banco local para o Supabase.</p>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Insumo</th>
+                            <th>Marca</th>
+                            <th>Lote</th>
+                            <th>Quantidade</th>
+                            <th>Unidade</th>
+                            <th>Última Atualização</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@item.nome</td>
+                                    <td>@(string.IsNullOrEmpty(item.marca) ? "-" : item.marca)</td>
+                                    <td><code>@(string.IsNullOrEmpty(item.lote_fabricante) ? "-" : item.lote_fabricante)</code></td>
+                                    <td>
+                                        @if (item.quantidade <= 10)
+                                        {
+                                            <span class="badge bg-danger">@item.quantidade (Baixo)</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">@item.quantidade</span>
+                                        }
+                                    </td>
+                                    <td>@item.unidade_medida</td>
+                                    <td><small class="text-muted">@item.atualizado_em.ToString("dd/MM/yyyy HH:mm")</small></td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">Nenhum insumo encontrado no momento.</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
