@@ -4,14 +4,15 @@ WORKDIR /src
 COPY ["fabricawebrender.csproj", "./"]
 RUN dotnet restore "fabricawebrender.csproj"
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish "fabricawebrender.csproj" -c Release -o /app/publish
 
-# Estágio de Execução
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+# Estágio Final / Execução
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+WORKDIR /app
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+
+FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-
-ENV ASPNETCORE_URLS=http://*:$PORT
-EXPOSE 8080
-
 ENTRYPOINT ["dotnet", "FabricaWebRender.dll"]
