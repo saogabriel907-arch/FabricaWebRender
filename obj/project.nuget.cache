@@ -1,8 +1,13 @@
 {
   "version": 2,
-  "dgSpecHash": "v1w+fA7ELmk=",
+  "dgSpecHash": "7ufTRxHnxgs=",
   "success": true,
   "projectFilePath": "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\FabricaWeb\\FabricaWebRender\\fabricawebrender.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\Fatura\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.28\\microsoft.netcore.app.ref.8.0.28.nupkg.sha512",
+    "C:\\Users\\Fatura\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.28\\microsoft.windowsdesktop.app.ref.8.0.28.nupkg.sha512",
+    "C:\\Users\\Fatura\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\8.0.28\\microsoft.aspnetcore.app.ref.8.0.28.nupkg.sha512",
+    "C:\\Users\\Fatura\\.nuget\\packages\\microsoft.netcore.app.host.win-x64\\8.0.28\\microsoft.netcore.app.host.win-x64.8.0.28.nupkg.sha512"
+  ],
   "logs": []
 }
