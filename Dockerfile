@@ -7,12 +7,9 @@ COPY . .
 RUN dotnet publish "fabricawebrender.csproj" -c Release -o /app/publish
 
 # Estágio Final / Execução
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
-EXPOSE 8080
-ENV ASPNETCORE_URLS=http://+:8080
-
-FROM base AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "FabricaWebRender.dll"]
+EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8080
+ENTRYPOINT ["dotnet", "fabricawebrender.dll"]
