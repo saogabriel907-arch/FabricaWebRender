@@ -1,0 +1,45 @@
+@model IEnumerable<FabricaWebRender.Controllers.MateriaPrimaViewModel>
+
+@{
+    ViewData["Title"] = "Consultar Matéria-Prima";
+}
+
+<div class="container mt-4">
+    <h2>📦 Consulta de Matéria-Prima (Leite e Entradas)</h2>
+    <p class="text-muted">Histórico de entradas sincronizado diretamente do banco para o Supabase.</p>
+
+    <div class="table-responsive mt-3">
+        <table class="table table-striped table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Insumo ID</th>
+                    <th>Quantidade Adicionada</th>
+                    <th>Data de Entrada</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.InsumoId</td>
+                            <td><strong>@item.QuantidadeAdicionada.ToString("N2")</strong></td>
+                            <td>@item.DataEntrada</td>
+                            <td>@item.Observacao</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Nenhum registo encontrado.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
