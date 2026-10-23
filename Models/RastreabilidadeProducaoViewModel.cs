@@ -1,6 +1,6 @@
 using System;
 
-namespace FabricaWebPortal.Models
+namespace fabricawebrender.Models
 {
     public class RastreabilidadeProducaoViewModel
     {

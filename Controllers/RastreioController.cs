@@ -4,19 +4,17 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using FabricaWebPortal.Models;
+using fabricawebrender.Models;
 
-namespace FabricaWebPortal.Controllers
+namespace fabricawebrender.Controllers
 {
-    public class HomeController : Controller
+    public class RastreioController : Controller
     {
-        // (Mantém os teus métodos anteriores de Leite e Estoque aqui...)
-
-        public async Task<IActionResult> Rastreabilidade()
+        public async Task<IActionResult> Index()
         {
             var listaRastreio = new List<RastreabilidadeProducaoViewModel>();
             string supabaseUrl = "https://pzjyyjkilhhtuuuxtjeo.supabase.co/rest/v1/RastreabilidadeProducao?select=*";
-            string supabaseKey = "sb_publishable_L7myx4lWC6orKJyJJ0dJ1w_V_6jEWhk"; // Substitui pela tua chave pública atual
+            string supabaseKey = "sb_publishable_L7myx4lWC6orKJyJJ0dJ1w_V_6jEWhk";
 
             using (HttpClient client = new HttpClient())
             {

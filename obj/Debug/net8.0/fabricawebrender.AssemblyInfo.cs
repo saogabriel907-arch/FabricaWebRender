@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("fabricawebrender")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+343af70422681d87cf031f04be8e39a75274e3ab")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+19ffe1e5de4a12da93846a9b21a30f466da67e1c")]
 [assembly: System.Reflection.AssemblyProductAttribute("fabricawebrender")]
 [assembly: System.Reflection.AssemblyTitleAttribute("fabricawebrender")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
