@@ -1,51 +1,62 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using System.Collections.Generic;
-using System.Net.Http;
-using System.Threading.Tasks;
 
-namespace FabricaWebRender.Controllers
+namespace FabricaWebPortal.Controllers
 {
     public class MateriaPrimaController : Controller
     {
-        // URL da tabela de histórico de entradas ou matéria-prima no Supabase
-        private readonly string supabaseUrl = "https://pzjyyjkilhhtuuuxtjeo.supabase.co/rest/v1/HistoricoEntrada?select=*";
+        private readonly string supabaseUrl = "https://pzjyyjkilhhtuuuxtjeo.supabase.co/rest/v1/";
         private readonly string supabaseKey = "sb_publishable_L7myx4lWC6orKJyJJ0dJ1w_V_6jEWhk";
 
         public async Task<IActionResult> Index()
         {
-            List<MateriaPrimaViewModel> listaMateriaPrima = new List<MateriaPrimaViewModel>();
+            var historicoList = new List<HistoricoLeiteSoroViewModel>();
 
-            using (HttpClient client = new HttpClient())
+            using (var client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("apikey", supabaseKey);
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {supabaseKey}");
 
-                HttpResponseMessage response = await client.GetAsync(supabaseUrl);
-
-                if (response.IsSuccessStatusCode)
+                // Buscar o Histórico de Leite e Soro ordenado por data descendente
+                var responseHistorico = await client.GetAsync($"{supabaseUrl}HistoricoLeiteSoro?select=*&order=DataHora.desc");
+                if (responseHistorico.IsSuccessStatusCode)
                 {
-                    string jsonResponse = await response.Content.ReadAsStringAsync();
-
-                    var options = new JsonSerializerOptions
+                    var jsonHistorico = await responseHistorico.Content.ReadAsStringAsync();
+                    using (var doc = JsonDocument.Parse(jsonHistorico))
                     {
-                        PropertyNameCaseInsensitive = true
-                    };
-
-                    listaMateriaPrima = JsonSerializer.Deserialize<List<MateriaPrimaViewModel>>(jsonResponse, options) ?? new List<MateriaPrimaViewModel>();
+                        foreach (var element in doc.RootElement.EnumerateArray())
+                        {
+                            historicoList.Add(new HistoricoLeiteSoroViewModel
+                            {
+                                Id = element.GetProperty("id").GetInt64(),
+                                Insumo = element.TryGetProperty("Insumo", out var ins) ? ins.GetString() ?? "" : "",
+                                Peso = element.TryGetProperty("Peso", out var p) && p.ValueKind != JsonValueKind.Null ? p.GetDecimal() : 0,
+                                DataHora = element.TryGetProperty("DataHora", out var dt) && dt.ValueKind != JsonValueKind.Null ? dt.GetDateTime() : DateTime.MinValue,
+                                Fornecedor = element.TryGetProperty("Fornecedor", out var f) ? f.GetString() ?? "" : "",
+                                Lote = element.TryGetProperty("Lote", out var l) ? l.GetString() ?? "" : "",
+                                NotaFiscal = element.TryGetProperty("NotaFiscal", out var nf) ? nf.GetString() ?? "" : "",
+                                Sif = element.TryGetProperty("Sif", out var sif) ? sif.GetString() ?? "" : "",
+                                OutrosDetalhes = element.TryGetProperty("OutrosDetalhes", out var od) ? od.GetString() ?? "" : ""
+                            });
+                        }
+                    }
                 }
             }
 
-            return View(listaMateriaPrima);
+            return View(historicoList);
         }
     }
 
-    public class MateriaPrimaViewModel
+    public class HistoricoLeiteSoroViewModel
     {
-        public int Id { get; set; }
-        public int InsumoId { get; set; }
-        public decimal QuantidadeAdicionada { get; set; }
-        public string DataEntrada { get; set; }
-        public string Observacao { get; set; }
+        public long Id { get; set; }
+        public string Insumo { get; set; } = string.Empty;
+        public decimal Peso { get; set; }
+        public DateTime DataHora { get; set; }
+        public string Fornecedor { get; set; } = string.Empty;
+        public string Lote { get; set; } = string.Empty;
+        public string NotaFiscal { get; set; } = string.Empty;
+        public string Sif { get; set; } = string.Empty;
+        public string OutrosDetalhes { get; set; } = string.Empty;
     }
 }

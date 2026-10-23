@@ -1,42 +1,50 @@
-@model IEnumerable<FabricaWebRender.Controllers.MateriaPrimaViewModel>
+@model IEnumerable<FabricaWebPortal.Controllers.HistoricoLeiteSoroViewModel>
 
 @{
-    ViewData["Title"] = "Consultar Matéria-Prima";
+    ViewData["Title"] = "Consulta de Leite e Matéria-Prima";
 }
 
 <div class="container mt-4">
-    <h2>📦 Consulta de Matéria-Prima (Leite e Entradas)</h2>
-    <p class="text-muted">Histórico de entradas sincronizado diretamente do banco para o Supabase.</p>
+    <h2>🥛 Consulta de Leite e Soro (Entradas)</h2>
+    <p class="text-muted">Histórico detalhado sincronizado da fábrica para o Supabase.</p>
 
-    <div class="table-responsive mt-3">
-        <table class="table table-striped table-bordered shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered">
             <thead class="table-dark">
                 <tr>
                     <th>ID</th>
-                    <th>Insumo ID</th>
-                    <th>Quantidade Adicionada</th>
-                    <th>Data de Entrada</th>
-                    <th>Observação</th>
+                    <th>Insumo</th>
+                    <th>Peso (KG)</th>
+                    <th>Data/Hora</th>
+                    <th>Fornecedor</th>
+                    <th>Lote</th>
+                    <th>NF</th>
+                    <th>SIF</th>
+                    <th>Detalhes</th>
                 </tr>
             </thead>
             <tbody>
                 @if (Model != null && Model.Any())
                 {
-                    foreach (var item in Model)
+                    @foreach (var item in Model)
                     {
                         <tr>
                             <td>@item.Id</td>
-                            <td>@item.InsumoId</td>
-                            <td><strong>@item.QuantidadeAdicionada.ToString("N2")</strong></td>
-                            <td>@item.DataEntrada</td>
-                            <td>@item.Observacao</td>
+                            <td><strong>@item.Insumo</strong></td>
+                            <td>@item.Peso.ToString("N2")</td>
+                            <td>@(item.DataHora == DateTime.MinValue ? "-" : item.DataHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</td>
+                            <td>@item.Fornecedor</td>
+                            <td>@item.Lote</td>
+                            <td>@item.NotaFiscal</td>
+                            <td>@item.Sif</td>
+                            <td>@item.OutrosDetalhes</td>
                         </tr>
                     }
                 }
                 else
                 {
                     <tr>
-                        <td colspan="5" class="text-center text-muted">Nenhum registo encontrado.</td>
+                        <td colspan="9" class="text-center">Nenhum registo encontrado.</td>
                     </tr>
                 }
             </tbody>
