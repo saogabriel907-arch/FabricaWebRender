@@ -14,7 +14,7 @@ namespace fabricawebrender.Controllers
         {
             var listaRastreio = new List<RastreabilidadeProducaoViewModel>();
             // Certifica-te de que o nome da tabela aqui coincide exatamente com o usado no robô
-            string supabaseUrl = "https://pzjyyjkilhhtuuuxtjeo.supabase.co/rest/v1/RastreabilidadeProducao?select=*";
+            string supabaseUrl = "https://pzjyyjkilhhtuuuxtjeo.supabase.co/rest/v1/rastreabilidadeproducao?select=*";
             string supabaseKey = "sb_publishable_L7myx4lWC6orKJyJJ0dJ1w_V_6jEWhk";
 
             using (HttpClient client = new HttpClient())
