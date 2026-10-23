@@ -1,0 +1,54 @@
+@model IEnumerable<FabricaWebPortal.Models.RastreabilidadeProducaoViewModel>
+
+@{
+    ViewData["Title"] = "Rastreabilidade de Produção";
+}
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-3">
+        <span style="font-size: 2rem; margin-right: 10px;">🔍</span>
+        <div>
+            <h2>Rastreabilidade de Produção</h2>
+            <p class="text-muted">Consulta cruzada de Lotes, Leite, Bobinas e Fardos em tempo real.</p>
+        </div>
+    </div>
+
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-dark table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Data / Hora</th>
+                    <th>Leite Utilizado</th>
+                    <th>Qtd (Kg)</th>
+                    <th>Bobina</th>
+                    <th>Fardo</th>
+                    <th>Destino</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.DataProducao.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><strong>@item.LeiteUtilizado</strong></td>
+                            <td>@item.Quantidade.ToString("N2")</td>
+                            <td><span class="badge bg-info text-dark">@item.BobinaUtilizada</span></td>
+                            <td><span class="badge bg-warning text-dark">@item.FardoUtilizado</span></td>
+                            <td>@item.Destino</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-4">Nenhum registo de rastreabilidade encontrado.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
