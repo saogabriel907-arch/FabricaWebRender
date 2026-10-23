@@ -17,7 +17,6 @@ namespace FabricaWebPortal.Controllers
                 client.DefaultRequestHeaders.Add("apikey", supabaseKey);
                 client.DefaultRequestHeaders.Add("Authorization", $"Bearer {supabaseKey}");
 
-                // Buscar o Histórico de Leite e Soro ordenado por data descendente
                 var responseHistorico = await client.GetAsync($"{supabaseUrl}HistoricoLeiteSoro?select=*&order=DataHora.desc");
                 if (responseHistorico.IsSuccessStatusCode)
                 {
@@ -36,6 +35,8 @@ namespace FabricaWebPortal.Controllers
                                 Lote = element.TryGetProperty("Lote", out var l) ? l.GetString() ?? "" : "",
                                 NotaFiscal = element.TryGetProperty("NotaFiscal", out var nf) ? nf.GetString() ?? "" : "",
                                 Sif = element.TryGetProperty("Sif", out var sif) ? sif.GetString() ?? "" : "",
+                                DataFabricacao = element.TryGetProperty("DataFabricacao", out var df) ? df.GetString() ?? "" : "",
+                                DataValidade = element.TryGetProperty("DataValidade", out var dv) ? dv.GetString() ?? "" : "",
                                 OutrosDetalhes = element.TryGetProperty("OutrosDetalhes", out var od) ? od.GetString() ?? "" : ""
                             });
                         }
@@ -57,6 +58,8 @@ namespace FabricaWebPortal.Controllers
         public string Lote { get; set; } = string.Empty;
         public string NotaFiscal { get; set; } = string.Empty;
         public string Sif { get; set; } = string.Empty;
+        public string DataFabricacao { get; set; } = string.Empty;
+        public string DataValidade { get; set; } = string.Empty;
         public string OutrosDetalhes { get; set; } = string.Empty;
     }
 }
