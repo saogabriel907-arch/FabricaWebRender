@@ -44,6 +44,11 @@ namespace FabricaWebPortal.Controllers
                 }
             }
 
+            // Filtra para remover itens sem nome de insumo ou com peso zero/vazio que poluem a tabela
+            historicoList = historicoList
+                .Where(x => !string.IsNullOrWhiteSpace(x.Insumo) && x.Peso > 0)
+                .ToList();
+
             return View(historicoList);
         }
     }
