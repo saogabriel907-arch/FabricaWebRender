@@ -37,18 +37,16 @@ namespace FabricaWebPortal.Controllers
                                 Sif = element.TryGetProperty("Sif", out var sif) ? sif.GetString() ?? "" : "",
                                 DataFabricacao = element.TryGetProperty("DataFabricacao", out var df) ? df.GetString() ?? "" : "",
                                 DataValidade = element.TryGetProperty("DataValidade", out var dv) ? dv.GetString() ?? "" : "",
-                                OutrosDetalhes = element.TryGetProperty("OutrosDetalhes", out var od) ? od.GetString() ?? "" : "",
-                                Ativo = element.TryGetProperty("Ativo", out var at) && at.ValueKind != JsonValueKind.Null ? at.GetBoolean() : true
+                                OutrosDetalhes = element.TryGetProperty("OutrosDetalhes", out var od) ? od.GetString() ?? "" : ""
                             });
                         }
                     }
                 }
             }
 
-            // Filtra para exibir APENAS o estoque real ativo de leite, soro e desnatado
+            // Filtra com base nos mesmos critérios que alimentam o setor de descasque (peso > 0 e nome contendo leite/soro/desnatado)
             historicoList = historicoList
-                .Where(x => x.Ativo 
-                         && !string.IsNullOrWhiteSpace(x.Insumo) 
+                .Where(x => !string.IsNullOrWhiteSpace(x.Insumo) 
                          && x.Peso > 0
                          && (x.Insumo.Contains("Leite", StringComparison.OrdinalIgnoreCase) 
                              || x.Insumo.Contains("Soro", StringComparison.OrdinalIgnoreCase) 
@@ -72,6 +70,5 @@ namespace FabricaWebPortal.Controllers
         public string DataFabricacao { get; set; } = string.Empty;
         public string DataValidade { get; set; } = string.Empty;
         public string OutrosDetalhes { get; set; } = string.Empty;
-        public bool Ativo { get; set; } = true;
     }
 }
