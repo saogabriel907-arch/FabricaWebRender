@@ -37,18 +37,19 @@ namespace FabricaWebPortal.Controllers
                                 Sif = element.TryGetProperty("Sif", out var sif) ? sif.GetString() ?? "" : "",
                                 DataFabricacao = element.TryGetProperty("DataFabricacao", out var df) ? df.GetString() ?? "" : "",
                                 DataValidade = element.TryGetProperty("DataValidade", out var dv) ? dv.GetString() ?? "" : "",
-                                OutrosDetalhes = element.TryGetProperty("OutrosDetalhes", out var od) ? od.GetString() ?? "" : ""
+                                OutrosDetalhes = element.TryGetProperty("OutrosDetalhes", out var od) ? od.GetString() ?? "" : "",
+                                Ativo = element.TryGetProperty("Ativo", out var at) && at.ValueKind != JsonValueKind.Null ? at.GetBoolean() : true
                             });
                         }
                     }
                 }
             }
 
-            // Filtro rigoroso: Remove linhas vazias, exige fornecedor/lote preenchido e foca apenas nas matérias-primas reais
+            // Filtra para exibir APENAS o estoque real ativo de leite, soro e desnatado
             historicoList = historicoList
-                .Where(x => !string.IsNullOrWhiteSpace(x.Insumo) 
+                .Where(x => x.Ativo 
+                         && !string.IsNullOrWhiteSpace(x.Insumo) 
                          && x.Peso > 0
-                         && (!string.IsNullOrWhiteSpace(x.Fornecedor) || !string.IsNullOrWhiteSpace(x.Lote))
                          && (x.Insumo.Contains("Leite", StringComparison.OrdinalIgnoreCase) 
                              || x.Insumo.Contains("Soro", StringComparison.OrdinalIgnoreCase) 
                              || x.Insumo.Contains("Desnatado", StringComparison.OrdinalIgnoreCase)))
@@ -71,5 +72,6 @@ namespace FabricaWebPortal.Controllers
         public string DataFabricacao { get; set; } = string.Empty;
         public string DataValidade { get; set; } = string.Empty;
         public string OutrosDetalhes { get; set; } = string.Empty;
+        public bool Ativo { get; set; } = true;
     }
 }
