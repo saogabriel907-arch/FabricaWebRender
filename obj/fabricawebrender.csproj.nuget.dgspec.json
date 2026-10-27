@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\fabricaweb\\fabricawebrender\\fabricawebrender.csproj": {}
+    "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\FabricaWeb\\FabricaWebRender\\fabricawebrender.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\fabricaweb\\fabricawebrender\\fabricawebrender.csproj": {
+    "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\FabricaWeb\\FabricaWebRender\\fabricawebrender.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\fabricaweb\\fabricawebrender\\fabricawebrender.csproj",
+        "projectUniqueName": "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\FabricaWeb\\FabricaWebRender\\fabricawebrender.csproj",
         "projectName": "fabricawebrender",
-        "projectPath": "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\fabricaweb\\fabricawebrender\\fabricawebrender.csproj",
+        "projectPath": "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\FabricaWeb\\FabricaWebRender\\fabricawebrender.csproj",
         "packagesPath": "C:\\Users\\Fatura\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\fabricaweb\\fabricawebrender\\obj\\",
+        "outputPath": "C:\\Users\\Fatura\\OneDrive\\Desktop\\Qualidade Matheus\\c#\\FabricaWeb\\FabricaWebRender\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Fatura\\AppData\\Roaming\\NuGet\\NuGet.Config"

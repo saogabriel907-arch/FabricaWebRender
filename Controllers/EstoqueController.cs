@@ -30,6 +30,13 @@ namespace FabricaWebRender.Controllers
                     };
 
                     listaEstoque = JsonSerializer.Deserialize<List<InsumoEstoqueViewModel>>(jsonResponse, options) ?? new List<InsumoEstoqueViewModel>();
+
+                    // Filtra para exibir apenas os insumos, ocultando fardos e produtos acabados (leite em pó, etc.)
+                    listaEstoque = listaEstoque
+                        .Where(x => !string.IsNullOrEmpty(x.nome) 
+                                 && !x.nome.Contains("LEITE EM PÓ", StringComparison.OrdinalIgnoreCase)
+                                 && !x.nome.Contains("Fardo", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
                 }
             }
 
