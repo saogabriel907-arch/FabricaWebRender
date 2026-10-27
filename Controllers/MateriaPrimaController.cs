@@ -44,9 +44,13 @@ namespace FabricaWebPortal.Controllers
                 }
             }
 
-            // Filtra para remover itens sem nome de insumo ou com peso zero/vazio que poluem a tabela
+            // Filtra para garantir que apenas matérias-primas válidas (com nome preenchido e peso positivo) apareçam na listagem
             historicoList = historicoList
-                .Where(x => !string.IsNullOrWhiteSpace(x.Insumo) && x.Peso > 0)
+                .Where(x => !string.IsNullOrWhiteSpace(x.Insumo) 
+                         && x.Peso > 0
+                         && (x.Insumo.Contains("Leite", StringComparison.OrdinalIgnoreCase) 
+                             || x.Insumo.Contains("Soro", StringComparison.OrdinalIgnoreCase) 
+                             || x.Insumo.Contains("Desnatado", StringComparison.OrdinalIgnoreCase)))
                 .ToList();
 
             return View(historicoList);
