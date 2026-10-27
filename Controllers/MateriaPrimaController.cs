@@ -44,10 +44,11 @@ namespace FabricaWebPortal.Controllers
                 }
             }
 
-            // Filtra para garantir que apenas matérias-primas válidas (com nome preenchido e peso positivo) apareçam na listagem
+            // Filtro rigoroso: Remove linhas vazias, exige fornecedor/lote preenchido e foca apenas nas matérias-primas reais
             historicoList = historicoList
                 .Where(x => !string.IsNullOrWhiteSpace(x.Insumo) 
                          && x.Peso > 0
+                         && (!string.IsNullOrWhiteSpace(x.Fornecedor) || !string.IsNullOrWhiteSpace(x.Lote))
                          && (x.Insumo.Contains("Leite", StringComparison.OrdinalIgnoreCase) 
                              || x.Insumo.Contains("Soro", StringComparison.OrdinalIgnoreCase) 
                              || x.Insumo.Contains("Desnatado", StringComparison.OrdinalIgnoreCase)))
