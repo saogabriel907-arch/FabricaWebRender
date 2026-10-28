@@ -79,10 +79,9 @@ namespace FabricaWebPortal.Controllers
                                 // Filtro simplificado: A despesa/entrada deve conter Leite ou Soro, com peso maior que zero e sem termos bloqueados desnecessários
 if (!string.IsNullOrWhiteSpace(nomeInsumo) &&
     peso > 0 &&
-    (nomeInsumo.Contains("Leite", StringComparison.OrdinalIgnoreCase) || 
-     nomeInsumo.Contains("Soro", StringComparison.OrdinalIgnoreCase)) &&
     !nomeInsumo.Contains("Film", StringComparison.OrdinalIgnoreCase) &&
-    !nomeInsumo.Contains("Fardo", StringComparison.OrdinalIgnoreCase))
+    !nomeInsumo.Contains("Fardo", StringComparison.OrdinalIgnoreCase) &&
+    !nomeInsumo.Contains("Teste", StringComparison.OrdinalIgnoreCase))
 {
     historicoList.Add(new HistoricoLeiteSoroViewModel
     {
