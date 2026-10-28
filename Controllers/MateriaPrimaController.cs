@@ -12,46 +12,121 @@ namespace FabricaWebPortal.Controllers
         {
             var historicoList = new List<HistoricoLeiteSoroViewModel>();
 
-            using (var client = new HttpClient())
+            try
             {
-                client.DefaultRequestHeaders.Add("apikey", supabaseKey);
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {supabaseKey}");
-
-                var responseHistorico = await client.GetAsync($"{supabaseUrl}HistoricoLeiteSoro?select=*&order=DataHora.desc");
-                if (responseHistorico.IsSuccessStatusCode)
+                using (var client = new HttpClient())
                 {
-                    var jsonHistorico = await responseHistorico.Content.ReadAsStringAsync();
-                    using (var doc = JsonDocument.Parse(jsonHistorico))
+                    client.DefaultRequestHeaders.Add("apikey", supabaseKey);
+                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {supabaseKey}");
+                    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+                    string[] tabelas = { "HistoricoLeiteSoro", "historicoleitesoro", "historico_leite_soro" };
+                    HttpResponseMessage response = null;
+
+                    foreach (var tab in tabelas)
                     {
-                        foreach (var element in doc.RootElement.EnumerateArray())
+                        response = await client.GetAsync($"{supabaseUrl}{tab}?select=*");
+                        if (response.IsSuccessStatusCode)
                         {
-                            historicoList.Add(new HistoricoLeiteSoroViewModel
-                            {
-                                Id = element.GetProperty("id").GetInt64(),
-                                Insumo = element.TryGetProperty("Insumo", out var ins) ? ins.GetString() ?? "" : "",
-                                Peso = element.TryGetProperty("Peso", out var p) && p.ValueKind != JsonValueKind.Null ? p.GetDecimal() : 0,
-                                DataHora = element.TryGetProperty("DataHora", out var dt) && dt.ValueKind != JsonValueKind.Null ? dt.GetDateTime() : DateTime.MinValue,
-                                Fornecedor = element.TryGetProperty("Fornecedor", out var f) ? f.GetString() ?? "" : "",
-                                Lote = element.TryGetProperty("Lote", out var l) ? l.GetString() ?? "" : "",
-                                NotaFiscal = element.TryGetProperty("NotaFiscal", out var nf) ? nf.GetString() ?? "" : "",
-                                Sif = element.TryGetProperty("Sif", out var sif) ? sif.GetString() ?? "" : "",
-                                DataFabricacao = element.TryGetProperty("DataFabricacao", out var df) ? df.GetString() ?? "" : "",
-                                DataValidade = element.TryGetProperty("DataValidade", out var dv) ? dv.GetString() ?? "" : "",
-                                OutrosDetalhes = element.TryGetProperty("OutrosDetalhes", out var od) ? od.GetString() ?? "" : ""
-                            });
+                            break;
                         }
+                    }
+
+                    if (response != null && response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        using var doc = JsonDocument.Parse(json);
+
+                        if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var element in doc.RootElement.EnumerateArray())
+                            {
+                                string nomeInsumo = "";
+                                decimal peso = 0;
+                                string lote = "-";
+                                string sif = "-";
+                                string nf = "-";
+                                string fab = "-";
+                                string val = "-";
+                                string fornecedor = "Fábrica";
+                                DateTime dataHora = DateTime.Now;
+
+                                foreach (var prop in element.EnumerateObject())
+                                {
+                                    string pName = prop.Name.ToLower();
+                                    string pVal = prop.Value.ValueKind != JsonValueKind.Null ? prop.Value.ToString() : "";
+
+                                    if (pName == "insumo" || pName == "nome" || pName == "material")
+                                        nomeInsumo = pVal;
+                                    else if (pName == "peso" || pName == "quantidade" || pName == "estoque")
+                                        decimal.TryParse(pVal, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out peso);
+                                    else if (pName.Contains("lote") && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
+                                        lote = pVal;
+                                    else if (pName.Contains("sif") && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
+                                        sif = pVal;
+                                    else if ((pName.Contains("nf") || pName.Contains("nota")) && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
+                                        nf = pVal;
+                                    else if ((pName.Contains("fabricacao") || pName.Contains("fab")) && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
+                                        fab = pVal;
+                                    else if ((pName.Contains("validade") || pName.Contains("val")) && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
+                                        val = pVal;
+                                    else if (pName.Contains("fornecedor") && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
+                                        fornecedor = pVal;
+                                    else if ((pName.Contains("data") || pName.Contains("hora")) && prop.Value.TryGetDateTime(out var dt))
+                                        dataHora = dt;
+                                }
+
+                                // Filtro simplificado: A despesa/entrada deve conter Leite ou Soro, com peso maior que zero e sem termos bloqueados desnecessários
+if (!string.IsNullOrWhiteSpace(nomeInsumo) &&
+    peso > 0 &&
+    (nomeInsumo.Contains("Leite", StringComparison.OrdinalIgnoreCase) || 
+     nomeInsumo.Contains("Soro", StringComparison.OrdinalIgnoreCase)) &&
+    !nomeInsumo.Contains("Film", StringComparison.OrdinalIgnoreCase) &&
+    !nomeInsumo.Contains("Fardo", StringComparison.OrdinalIgnoreCase))
+{
+    historicoList.Add(new HistoricoLeiteSoroViewModel
+    {
+        Id = element.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0,
+        Insumo = nomeInsumo,
+        Peso = peso,
+        DataHora = dataHora,
+        Fornecedor = fornecedor,
+        Lote = lote,
+        NotaFiscal = nf,
+        Sif = sif,
+        OutrosDetalhes = $"Fab: {fab} | Val: {val}"
+    });
+}
+                            }
+                        }
+                    }
+                    else
+                    {
+                        string erroBody = response != null ? await response.Content.ReadAsStringAsync() : "Sem resposta";
+                        historicoList.Add(new HistoricoLeiteSoroViewModel
+                        {
+                            Id = 0,
+                            Insumo = $"Erro HTTP: {response?.StatusCode}",
+                            Peso = 0,
+                            Fornecedor = "Supabase",
+                            Lote = "-", NotaFiscal = "-", Sif = "-",
+                            OutrosDetalhes = erroBody.Length > 50 ? erroBody.Substring(0, 50) : erroBody
+                        });
                     }
                 }
             }
-
-            // Filtra com base nos mesmos critérios que alimentam o setor de descasque (peso > 0 e nome contendo leite/soro/desnatado)
-            historicoList = historicoList
-                .Where(x => !string.IsNullOrWhiteSpace(x.Insumo) 
-                         && x.Peso > 0
-                         && (x.Insumo.Contains("Leite", StringComparison.OrdinalIgnoreCase) 
-                             || x.Insumo.Contains("Soro", StringComparison.OrdinalIgnoreCase) 
-                             || x.Insumo.Contains("Desnatado", StringComparison.OrdinalIgnoreCase)))
-                .ToList();
+            catch (Exception ex)
+            {
+                historicoList.Add(new HistoricoLeiteSoroViewModel
+                {
+                    Id = 0,
+                    Insumo = $"Exceção: {ex.Message}",
+                    Peso = 0,
+                    Fornecedor = "Sistema",
+                    Lote = "-", NotaFiscal = "-", Sif = "-",
+                    OutrosDetalhes = "-"
+                });
+            }
 
             return View(historicoList);
         }
@@ -67,8 +142,6 @@ namespace FabricaWebPortal.Controllers
         public string Lote { get; set; } = string.Empty;
         public string NotaFiscal { get; set; } = string.Empty;
         public string Sif { get; set; } = string.Empty;
-        public string DataFabricacao { get; set; } = string.Empty;
-        public string DataValidade { get; set; } = string.Empty;
         public string OutrosDetalhes { get; set; } = string.Empty;
     }
 }
