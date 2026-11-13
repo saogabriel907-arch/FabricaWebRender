@@ -4,6 +4,7 @@ namespace FabricaWebRender.Models
     {
         public long id_insumo { get; set; }
         public string nome { get; set; }
+        public string categoria { get; set; } = string.Empty;
         public decimal quantidade { get; set; }
         public string unidade_medida { get; set; }
         public string marca { get; set; }

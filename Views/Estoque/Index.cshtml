@@ -1,16 +1,40 @@
-@model IEnumerable<FabricaWebRender.Models.InsumoEstoqueViewModel>
+@model FabricaWebRender.Models.EstoquePageViewModel
 
 @{
-    ViewData["Title"] = "Painel de Estoque - Fábrica";
+    ViewData["Title"] = "Bobinas e Fardos - Fábrica";
 }
 
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col">
-            <h2 class="fw-bold text-dark">📦 Painel de Estoque em Tempo Real</h2>
-            <p class="text-muted">Dados sincronizados diretamente do banco local para o Supabase.</p>
+            <h2 class="fw-bold text-dark">📦 Bobinas e Fardos disponíveis</h2>
+            <p class="text-muted">Consulte o estoque de embalagens sincronizado com a fábrica.</p>
         </div>
     </div>
+
+    <form asp-action="Index" method="get" class="row g-3 align-items-end mb-4">
+        <div class="col-sm-6 col-md-4">
+            <label for="categoria" class="form-label fw-semibold">Tipo de insumo</label>
+            <select id="categoria" name="categoria" class="form-select">
+                <option value="todas" selected="@(Model.CategoriaSelecionada == "todas" ? "selected" : null)">Bobinas e fardos</option>
+                <option value="bobina" selected="@(Model.CategoriaSelecionada == "bobina" ? "selected" : null)">Bobinas</option>
+                <option value="fardo" selected="@(Model.CategoriaSelecionada == "fardo" ? "selected" : null)">Fardos</option>
+            </select>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <label for="ordenacao" class="form-label fw-semibold">Ordenar quantidade</label>
+            <select id="ordenacao" name="ordenacao" class="form-select">
+                <option value="quantidade_desc" selected="@(Model.OrdenacaoSelecionada == "quantidade_desc" ? "selected" : null)">Maior para menor</option>
+                <option value="quantidade_asc" selected="@(Model.OrdenacaoSelecionada == "quantidade_asc" ? "selected" : null)">Menor para maior</option>
+            </select>
+        </div>
+        <div class="col-sm-12 col-md-auto">
+            <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+        </div>
+        <div class="col-12">
+            <span class="text-muted">@Model.Registros.Count insumo(s) encontrado(s)</span>
+        </div>
+    </form>
 
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
@@ -19,6 +43,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th>Insumo</th>
+                            <th>Tipo</th>
                             <th>Marca</th>
                             <th>Lote</th>
                             <th>Quantidade</th>
@@ -27,12 +52,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model != null && Model.Any())
+                        @if (Model.Registros.Count > 0)
                         {
-                            @foreach (var item in Model)
+                            @foreach (var item in Model.Registros)
                             {
                                 <tr>
                                     <td class="fw-semibold">@item.nome</td>
+                                    <td>@item.categoria</td>
                                     <td>@(string.IsNullOrEmpty(item.marca) ? "-" : item.marca)</td>
                                     <td><code>@(string.IsNullOrEmpty(item.lote_fabricante) ? "-" : item.lote_fabricante)</code></td>
                                     <td>
@@ -46,14 +72,14 @@
                                         }
                                     </td>
                                     <td>@item.unidade_medida</td>
-                                    <td><small class="text-muted">@item.atualizado_em.ToString("dd/MM/yyyy HH:mm")</small></td>
+                                    <td><small class="text-muted">@(item.atualizado_em == DateTime.MinValue ? "-" : item.atualizado_em.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</small></td>
                                 </tr>
                             }
                         }
                         else
                         {
                             <tr>
-                                <td colspan="6" class="text-center py-4 text-muted">Nenhum insumo encontrado no momento.</td>
+                                <td colspan="7" class="text-center py-4 text-muted">Nenhuma bobina ou fardo encontrado para os filtros selecionados.</td>
                             </tr>
                         }
                     </tbody>
