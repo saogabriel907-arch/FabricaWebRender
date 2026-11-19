@@ -1,146 +1,148 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 
-namespace FabricaWebPortal.Controllers
+namespace FabricaWebPortal.Controllers;
+
+public class MateriaPrimaController : Controller
 {
-    public class MateriaPrimaController : Controller
-    {
-        private readonly string supabaseUrl = "https://pzjyyjkilhhtuuuxtjeo.supabase.co/rest/v1/";
-        private readonly string supabaseKey = "sb_publishable_L7myx4lWC6orKJyJJ0dJ1w_V_6jEWhk";
+    private readonly IHttpClientFactory _httpClientFactory;
 
-        public async Task<IActionResult> Index()
+    public MateriaPrimaController(IHttpClientFactory httpClientFactory)
+    {
+        _httpClientFactory = httpClientFactory;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        var materiasPrimas = new List<MateriaPrimaViewModel>();
+
+        try
         {
-            var historicoList = new List<HistoricoLeiteSoroViewModel>();
+            using var client = _httpClientFactory.CreateClient("Supabase");
+            using var response = await client.GetAsync(
+                "tabela_estoque?select=id_insumo,nome,categoria,quantidade,unidade_medida,marca,lote_fabricante,atualizado_em");
 
-            try
+            if (!response.IsSuccessStatusCode)
             {
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("apikey", supabaseKey);
-                    client.DefaultRequestHeaders.Add("Authorization", $"Bearer {supabaseKey}");
-                    client.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
-                    string[] tabelas = { "HistoricoLeiteSoro", "historicoleitesoro", "historico_leite_soro" };
-                    HttpResponseMessage response = null;
-
-                    foreach (var tab in tabelas)
-                    {
-                        response = await client.GetAsync($"{supabaseUrl}{tab}?select=*");
-                        if (response.IsSuccessStatusCode)
-                        {
-                            break;
-                        }
-                    }
-
-                    if (response != null && response.IsSuccessStatusCode)
-                    {
-                        var json = await response.Content.ReadAsStringAsync();
-                        using var doc = JsonDocument.Parse(json);
-
-                        if (doc.RootElement.ValueKind == JsonValueKind.Array)
-                        {
-                            foreach (var element in doc.RootElement.EnumerateArray())
-                            {
-                                string nomeInsumo = "";
-                                decimal peso = 0;
-                                string lote = "-";
-                                string sif = "-";
-                                string nf = "-";
-                                string fab = "-";
-                                string val = "-";
-                                string fornecedor = "Fábrica";
-                                DateTime dataHora = DateTime.Now;
-
-                                foreach (var prop in element.EnumerateObject())
-                                {
-                                    string pName = prop.Name.ToLower();
-                                    string pVal = prop.Value.ValueKind != JsonValueKind.Null ? prop.Value.ToString() : "";
-
-                                    if (pName == "insumo" || pName == "nome" || pName == "material")
-                                        nomeInsumo = pVal;
-                                    else if (pName == "peso" || pName == "quantidade" || pName == "estoque")
-                                        decimal.TryParse(pVal, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out peso);
-                                    else if (pName.Contains("lote") && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
-                                        lote = pVal;
-                                    else if (pName.Contains("sif") && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
-                                        sif = pVal;
-                                    else if ((pName.Contains("nf") || pName.Contains("nota")) && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
-                                        nf = pVal;
-                                    else if ((pName.Contains("fabricacao") || pName.Contains("fab")) && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
-                                        fab = pVal;
-                                    else if ((pName.Contains("validade") || pName.Contains("val")) && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
-                                        val = pVal;
-                                    else if (pName.Contains("fornecedor") && !string.IsNullOrEmpty(pVal) && pVal != "EMPTY")
-                                        fornecedor = pVal;
-                                    else if ((pName.Contains("data") || pName.Contains("hora")) && prop.Value.TryGetDateTime(out var dt))
-                                        dataHora = dt;
-                                }
-
-                                // Filtro simplificado: A despesa/entrada deve conter Leite ou Soro, com peso maior que zero e sem termos bloqueados desnecessários
-if (!string.IsNullOrWhiteSpace(nomeInsumo) &&
-    peso > 0 &&
-    !nomeInsumo.Contains("Film", StringComparison.OrdinalIgnoreCase) &&
-    !nomeInsumo.Contains("Fardo", StringComparison.OrdinalIgnoreCase) &&
-    !nomeInsumo.Contains("Teste", StringComparison.OrdinalIgnoreCase))
-{
-    historicoList.Add(new HistoricoLeiteSoroViewModel
-    {
-        Id = element.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0,
-        Insumo = nomeInsumo,
-        Peso = peso,
-        DataHora = dataHora,
-        Fornecedor = fornecedor,
-        Lote = lote,
-        NotaFiscal = nf,
-        Sif = sif,
-        OutrosDetalhes = $"Fab: {fab} | Val: {val}"
-    });
-}
-                            }
-                        }
-                    }
-                    else
-                    {
-                        string erroBody = response != null ? await response.Content.ReadAsStringAsync() : "Sem resposta";
-                        historicoList.Add(new HistoricoLeiteSoroViewModel
-                        {
-                            Id = 0,
-                            Insumo = $"Erro HTTP: {response?.StatusCode}",
-                            Peso = 0,
-                            Fornecedor = "Supabase",
-                            Lote = "-", NotaFiscal = "-", Sif = "-",
-                            OutrosDetalhes = erroBody.Length > 50 ? erroBody.Substring(0, 50) : erroBody
-                        });
-                    }
-                }
+                return StatusCode(StatusCodes.Status502BadGateway,
+                    "Não foi possível carregar o estoque de matérias-primas.");
             }
-            catch (Exception ex)
+
+            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            foreach (var element in document.RootElement.EnumerateArray())
             {
-                historicoList.Add(new HistoricoLeiteSoroViewModel
+                string categoria = GetString(element, "categoria");
+                decimal quantidade = GetDecimal(element, "quantidade");
+
+                if (!EhMateriaPrima(categoria) || quantidade <= 0)
                 {
-                    Id = 0,
-                    Insumo = $"Exceção: {ex.Message}",
-                    Peso = 0,
-                    Fornecedor = "Sistema",
-                    Lote = "-", NotaFiscal = "-", Sif = "-",
-                    OutrosDetalhes = "-"
+                    continue;
+                }
+
+                DateTime atualizadoEm = GetDateTime(element, "atualizado_em");
+                materiasPrimas.Add(new MateriaPrimaViewModel
+                {
+                    Id = GetInt64(element, "id_insumo"),
+                    Nome = GetString(element, "nome"),
+                    Categoria = categoria,
+                    Quantidade = quantidade,
+                    UnidadeMedida = GetString(element, "unidade_medida", "KG"),
+                    Marca = GetString(element, "marca", "-"),
+                    LoteFabricante = GetString(element, "lote_fabricante", "-"),
+                    AtualizadoEm = atualizadoEm
                 });
             }
-
-            return View(historicoList);
         }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway,
+                "Não foi possível consultar o estoque: " + ex.Message);
+        }
+
+        return View(materiasPrimas
+            .OrderBy(item => item.Nome, StringComparer.CurrentCultureIgnoreCase)
+            .ToList());
     }
 
-    public class HistoricoLeiteSoroViewModel
+    private static bool EhMateriaPrima(string categoria)
     {
-        public long Id { get; set; }
-        public string Insumo { get; set; } = string.Empty;
-        public decimal Peso { get; set; }
-        public DateTime DataHora { get; set; }
-        public string Fornecedor { get; set; } = string.Empty;
-        public string Lote { get; set; } = string.Empty;
-        public string NotaFiscal { get; set; } = string.Empty;
-        public string Sif { get; set; } = string.Empty;
-        public string OutrosDetalhes { get; set; } = string.Empty;
+        string normalizada = RemoverAcentos(categoria).Trim();
+        return normalizada.Equals("materia prima", StringComparison.OrdinalIgnoreCase);
     }
+
+    private static string GetString(JsonElement element, string property, string fallback = "")
+    {
+        if (!element.TryGetProperty(property, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return fallback;
+        }
+
+        string result = value.ToString().Trim();
+        return string.IsNullOrWhiteSpace(result) ? fallback : result;
+    }
+
+    private static long GetInt64(JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var value)) return 0;
+        return value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out long number)
+            ? number
+            : long.TryParse(value.ToString(), out number) ? number : 0;
+    }
+
+    private static decimal GetDecimal(JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var value) || value.ValueKind == JsonValueKind.Null)
+        {
+            return 0;
+        }
+
+        if (value.ValueKind == JsonValueKind.Number && value.TryGetDecimal(out decimal number))
+        {
+            return number;
+        }
+
+        return decimal.TryParse(value.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out number)
+            ? number
+            : 0;
+    }
+
+    private static DateTime GetDateTime(JsonElement element, string property)
+    {
+        if (!element.TryGetProperty(property, out var value) ||
+            !value.TryGetDateTime(out DateTime dateTime))
+        {
+            return DateTime.MinValue;
+        }
+
+        return dateTime;
+    }
+
+    private static string RemoverAcentos(string value)
+    {
+        var normalized = value.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder();
+        foreach (char character in normalized)
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString().Normalize(NormalizationForm.FormC);
+    }
+}
+
+public sealed class MateriaPrimaViewModel
+{
+    public long Id { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public string Categoria { get; set; } = string.Empty;
+    public decimal Quantidade { get; set; }
+    public string UnidadeMedida { get; set; } = "KG";
+    public string Marca { get; set; } = "-";
+    public string LoteFabricante { get; set; } = "-";
+    public DateTime AtualizadoEm { get; set; }
 }

@@ -1,50 +1,59 @@
-@model IEnumerable<FabricaWebPortal.Controllers.HistoricoLeiteSoroViewModel>
+@model IReadOnlyList<FabricaWebPortal.Controllers.MateriaPrimaViewModel>
 
 @{
-    ViewData["Title"] = "Consulta de Leite e Matéria-Prima";
+    ViewData["Title"] = "Matérias-Primas em Estoque";
 }
 
 <div class="container mt-4">
-    <h2>🥛 Consulta de Leite e Soro (Entradas)</h2>
-    <p class="text-muted">Histórico detalhado sincronizado da fábrica para o Supabase.</p>
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+            <h2>🧪 Matérias-Primas em Estoque</h2>
+            <p class="text-muted mb-0">Somente insumos com saldo atual maior que zero.</p>
+        </div>
+        <span class="badge text-bg-success fs-6">@Model.Count item(ns) disponível(is)</span>
+    </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered">
+    <div class="table-responsive mt-4">
+        <table class="table table-striped table-hover table-bordered align-middle">
             <thead class="table-dark">
                 <tr>
                     <th>ID</th>
                     <th>Insumo</th>
-                    <th>Peso (KG)</th>
-                    <th>Data/Hora</th>
-                    <th>Fornecedor</th>
-                    <th>Lote</th>
-                    <th>NF</th>
-                    <th>SIF</th>
-                    <th>Detalhes</th>
+                    <th>Tipo / Categoria</th>
+                    <th class="text-end">Estoque</th>
+                    <th>Unidade</th>
+                    <th>Marca</th>
+                    <th>Lote do fabricante</th>
+                    <th>Atualizado em</th>
                 </tr>
             </thead>
             <tbody>
-                @if (Model != null && Model.Any())
+                @if (Model.Count > 0)
                 {
                     @foreach (var item in Model)
                     {
                         <tr>
                             <td>@item.Id</td>
-                            <td><strong>@item.Insumo</strong></td>
-                            <td>@item.Peso.ToString("N2")</td>
-                            <td>@(item.DataHora == DateTime.MinValue ? "-" : item.DataHora.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</td>
-                            <td>@item.Fornecedor</td>
-                            <td>@item.Lote</td>
-                            <td>@item.NotaFiscal</td>
-                            <td>@item.Sif</td>
-                            <td>@item.OutrosDetalhes</td>
+                            <td><strong>@item.Nome</strong></td>
+                            <td><span class="badge text-bg-info">@item.Categoria</span></td>
+                            <td class="text-end fw-bold text-success">@item.Quantidade.ToString("N2")</td>
+                            <td>@item.UnidadeMedida</td>
+                            <td>@item.Marca</td>
+                            <td>@item.LoteFabricante</td>
+                            <td>
+                                @(item.AtualizadoEm == DateTime.MinValue
+                                    ? "-"
+                                    : item.AtualizadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))
+                            </td>
                         </tr>
                     }
                 }
                 else
                 {
                     <tr>
-                        <td colspan="9" class="text-center">Nenhum registo encontrado.</td>
+                        <td colspan="8" class="text-center py-4">
+                            Nenhuma matéria-prima com estoque disponível.
+                        </td>
                     </tr>
                 }
             </tbody>
