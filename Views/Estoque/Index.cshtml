@@ -72,7 +72,7 @@
                                         }
                                     </td>
                                     <td>@item.unidade_medida</td>
-                                    <td><small class="text-muted">@(item.atualizado_em == DateTime.MinValue ? "-" : item.atualizado_em.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))</small></td>
+                                    <td><small class="text-muted">@(item.atualizado_em?.ToString("dd/MM/yyyy HH:mm") ?? "-")</small></td>
                                 </tr>
                             }
                         }

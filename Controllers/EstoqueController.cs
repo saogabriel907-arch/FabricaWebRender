@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using System.Text.Json;
 using FabricaWebRender.Models;
 
@@ -6,6 +7,10 @@ namespace FabricaWebPortal.Controllers
 {
     public class EstoqueController : Controller
     {
+        private static readonly TimeZoneInfo FusoBrasilia =
+            TimeZoneInfo.FindSystemTimeZoneById(
+                OperatingSystem.IsWindows() ? "E. South America Standard Time" : "America/Sao_Paulo");
+
         private readonly IHttpClientFactory _httpClientFactory;
 
         public EstoqueController(IHttpClientFactory httpClientFactory)
@@ -38,10 +43,16 @@ namespace FabricaWebPortal.Controllers
                         else if (element.TryGetProperty("estoque", out var q2) && q2.ValueKind != JsonValueKind.Null) quantidade = q2.GetDecimal();
                         else if (element.TryGetProperty("peso", out var q3) && q3.ValueKind != JsonValueKind.Null) quantidade = q3.GetDecimal();
 
-                        DateTime atualizadoEm = default;
-                        if (element.TryGetProperty("atualizado_em", out var atualizadoEmElement))
+                        DateTimeOffset? atualizadoEm = null;
+                        if (element.TryGetProperty("atualizado_em", out var atualizadoEmElement) &&
+                            atualizadoEmElement.ValueKind == JsonValueKind.String &&
+                            DateTimeOffset.TryParse(
+                                atualizadoEmElement.GetString(),
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeUniversal,
+                                out var instanteAtualizacao))
                         {
-                            atualizadoEmElement.TryGetDateTime(out atualizadoEm);
+                            atualizadoEm = TimeZoneInfo.ConvertTime(instanteAtualizacao, FusoBrasilia);
                         }
 
                         estoqueList.Add(new InsumoEstoqueViewModel
