@@ -7,6 +7,7 @@ namespace FabricaWebPortal.Controllers;
 
 public class MateriaPrimaController : Controller
 {
+    private const int TamanhoPaginaEstoque = 100;
     private readonly IHttpClientFactory _httpClientFactory;
 
     public MateriaPrimaController(IHttpClientFactory httpClientFactory)
@@ -21,38 +22,54 @@ public class MateriaPrimaController : Controller
         try
         {
             using var client = _httpClientFactory.CreateClient("Supabase");
-            using var response = await client.GetAsync(
-                "tabela_estoque?select=id_insumo,nome,categoria,quantidade,unidade_medida,marca,lote_fabricante,atualizado_em");
+            const string consultaBase =
+                "tabela_estoque?select=id_insumo,nome,categoria,quantidade,unidade_medida,marca,lote_fabricante,atualizado_em&order=id_insumo.asc";
+            int offset = 0;
 
-            if (!response.IsSuccessStatusCode)
+            while (true)
             {
-                return StatusCode(StatusCodes.Status502BadGateway,
-                    "Não foi possível carregar o estoque de matérias-primas.");
-            }
+                using var response = await client.GetAsync(
+                    $"{consultaBase}&limit={TamanhoPaginaEstoque}&offset={offset}");
 
-            using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            foreach (var element in document.RootElement.EnumerateArray())
-            {
-                string categoria = GetString(element, "categoria");
-                decimal quantidade = GetDecimal(element, "quantidade");
-
-                if (!EhMateriaPrima(categoria) || quantidade <= 0)
+                if (!response.IsSuccessStatusCode)
                 {
-                    continue;
+                    return StatusCode(StatusCodes.Status502BadGateway,
+                        "Não foi possível carregar o estoque de matérias-primas.");
                 }
 
-                DateTime atualizadoEm = GetDateTime(element, "atualizado_em");
-                materiasPrimas.Add(new MateriaPrimaViewModel
+                using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                int registrosRecebidos = 0;
+                foreach (var element in document.RootElement.EnumerateArray())
                 {
-                    Id = GetInt64(element, "id_insumo"),
-                    Nome = GetString(element, "nome"),
-                    Categoria = categoria,
-                    Quantidade = quantidade,
-                    UnidadeMedida = GetString(element, "unidade_medida", "KG"),
-                    Marca = GetString(element, "marca", "-"),
-                    LoteFabricante = GetString(element, "lote_fabricante", "-"),
-                    AtualizadoEm = atualizadoEm
-                });
+                    registrosRecebidos++;
+                    string categoria = GetString(element, "categoria");
+                    decimal quantidade = GetDecimal(element, "quantidade");
+
+                    if (!EhMateriaPrima(categoria) || quantidade <= 0)
+                    {
+                        continue;
+                    }
+
+                    DateTime atualizadoEm = GetDateTime(element, "atualizado_em");
+                    materiasPrimas.Add(new MateriaPrimaViewModel
+                    {
+                        Id = GetInt64(element, "id_insumo"),
+                        Nome = GetString(element, "nome"),
+                        Categoria = categoria,
+                        Quantidade = quantidade,
+                        UnidadeMedida = GetString(element, "unidade_medida", "KG"),
+                        Marca = GetString(element, "marca", "-"),
+                        LoteFabricante = GetString(element, "lote_fabricante", "-"),
+                        AtualizadoEm = atualizadoEm
+                    });
+                }
+
+                if (registrosRecebidos == 0)
+                {
+                    break;
+                }
+
+                offset += registrosRecebidos;
             }
         }
         catch (Exception ex)
