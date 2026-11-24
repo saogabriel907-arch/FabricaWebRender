@@ -8,6 +8,10 @@ namespace FabricaWebPortal.Controllers;
 public class MateriaPrimaController : Controller
 {
     private const int TamanhoPaginaEstoque = 100;
+    private static readonly TimeZoneInfo FusoBrasilia =
+        TimeZoneInfo.FindSystemTimeZoneById(
+            OperatingSystem.IsWindows() ? "E. South America Standard Time" : "America/Sao_Paulo");
+
     private readonly IHttpClientFactory _httpClientFactory;
 
     public MateriaPrimaController(IHttpClientFactory httpClientFactory)
@@ -50,7 +54,7 @@ public class MateriaPrimaController : Controller
                         continue;
                     }
 
-                    DateTime atualizadoEm = GetDateTime(element, "atualizado_em");
+                    DateTimeOffset? atualizadoEm = GetDateTimeOffset(element, "atualizado_em");
                     materiasPrimas.Add(new MateriaPrimaViewModel
                     {
                         Id = GetInt64(element, "id_insumo"),
@@ -125,15 +129,15 @@ public class MateriaPrimaController : Controller
             : 0;
     }
 
-    private static DateTime GetDateTime(JsonElement element, string property)
+    private static DateTimeOffset? GetDateTimeOffset(JsonElement element, string property)
     {
         if (!element.TryGetProperty(property, out var value) ||
-            !value.TryGetDateTime(out DateTime dateTime))
+            !value.TryGetDateTimeOffset(out DateTimeOffset instante))
         {
-            return DateTime.MinValue;
+            return null;
         }
 
-        return dateTime;
+        return TimeZoneInfo.ConvertTime(instante, FusoBrasilia);
     }
 
     private static string RemoverAcentos(string value)
@@ -161,5 +165,5 @@ public sealed class MateriaPrimaViewModel
     public string UnidadeMedida { get; set; } = "KG";
     public string Marca { get; set; } = "-";
     public string LoteFabricante { get; set; } = "-";
-    public DateTime AtualizadoEm { get; set; }
+    public DateTimeOffset? AtualizadoEm { get; set; }
 }

@@ -41,9 +41,7 @@
                             <td>@item.Marca</td>
                             <td>@item.LoteFabricante</td>
                             <td>
-                                @(item.AtualizadoEm == DateTime.MinValue
-                                    ? "-"
-                                    : item.AtualizadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm"))
+                                @(item.AtualizadoEm?.ToString("dd/MM/yyyy HH:mm") ?? "-")
                             </td>
                         </tr>
                     }
