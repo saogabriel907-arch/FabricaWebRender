@@ -88,7 +88,7 @@
         <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
             <div>
                 <h2 class="h5 mb-0">Movimentos de estoque</h2>
-                <small class="text-secondary">Mais recentes primeiro · @Model.Registros.Count registro(s) nesta página</small>
+                <small class="text-secondary">Mais recentes primeiro · cada linha é um movimento · @Model.Registros.Count registro(s) nesta página</small>
             </div>
             @if (Model.TotalPaginas > 0)
             {
@@ -104,7 +104,7 @@
                     <th>Insumo movimentado</th>
                     <th>Categoria</th>
                     <th class="text-end">Quantidade</th>
-                    <th>Lote da bobina</th>
+                    <th>Lote informado</th>
                 </tr>
                 </thead>
                 <tbody>
