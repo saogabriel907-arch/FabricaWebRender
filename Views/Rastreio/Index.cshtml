@@ -1,53 +1,206 @@
-@model IEnumerable<fabricawebrender.Models.RastreabilidadeProducaoViewModel>
+@model fabricawebrender.Models.RastreabilidadeMovimentacoesPageViewModel
+@using System.Globalization
 @{
     ViewData["Title"] = "Rastreabilidade de Produção";
+    var cultura = CultureInfo.GetCultureInfo("pt-BR");
 }
 
-<div class="container mt-4">
-    <div class="d-flex align-items-center mb-3">
-        <span style="font-size: 2rem; margin-right: 10px;">🔍</span>
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
         <div>
-            <h2>Rastreabilidade de Produção</h2>
-            <p class="text-muted">Consulta cruzada de Lotes, Leite, Bobinas e Fardos em tempo real.</p>
+            <span class="badge rounded-pill text-bg-primary mb-2">CONTROLE DE PRODUÇÃO</span>
+            <h1 class="h2 mb-1">Rastreabilidade de Produção</h1>
+            <p class="text-secondary mb-0">Pesquise movimentos, ordens de produção, insumos e lotes.</p>
+        </div>
+        <span class="badge rounded-pill text-bg-light border text-secondary fs-6">
+            @Model.TotalRegistros.ToString("N0", cultura) movimento(s)
+        </span>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErroFiltro))
+    {
+        <div class="alert alert-warning" role="alert">@Model.ErroFiltro</div>
+    }
+
+    <form method="get" asp-controller="Rastreio" asp-action="Index" class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-4">
+                    <label for="pesquisa" class="form-label fw-semibold">Busca rápida</label>
+                    <input id="pesquisa" name="pesquisa" value="@Model.Pesquisa" class="form-control"
+                           placeholder="Insumo, lote, OP ou número do movimento" maxlength="100" />
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label for="dataInicial" class="form-label fw-semibold">De</label>
+                    <input id="dataInicial" name="dataInicial" type="date" value="@Model.DataInicial" class="form-control" />
+                </div>
+                <div class="col-6 col-lg-2">
+                    <label for="dataFinal" class="form-label fw-semibold">Até</label>
+                    <input id="dataFinal" name="dataFinal" type="date" value="@Model.DataFinal" class="form-control" />
+                </div>
+                <div class="col-12 col-lg-2">
+                    <label for="vinculo" class="form-label fw-semibold">Vínculo com produção</label>
+                    <select id="vinculo" name="vinculo" class="form-select">
+                        <option value="" selected="@(string.IsNullOrEmpty(Model.Vinculo) ? "selected" : null)">Todos</option>
+                        <option value="com-op" selected="@(Model.Vinculo == "com-op" ? "selected" : null)">Com OP</option>
+                        <option value="sem-op" selected="@(Model.Vinculo == "sem-op" ? "selected" : null)">Sem OP</option>
+                    </select>
+                </div>
+                <div class="col-12 col-lg-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Filtrar</button>
+                    <a asp-controller="Rastreio" asp-action="Index" class="btn btn-outline-secondary">Limpar</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="small text-secondary">Movimentos encontrados</div>
+                    <div class="fs-3 fw-bold">@Model.TotalRegistros.ToString("N0", cultura)</div>
+                    <div class="small text-secondary">Considerando os filtros aplicados</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="small text-secondary">Com ordem de produção</div>
+                    <div class="fs-3 fw-bold text-success">@Model.MovimentosComOrdemNaPagina.ToString("N0", cultura)</div>
+                    <div class="small text-secondary">Nesta página</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="small text-secondary">Sem ordem associada</div>
+                    <div class="fs-3 fw-bold text-warning">@Model.MovimentosSemOrdemNaPagina.ToString("N0", cultura)</div>
+                    <div class="small text-secondary">Nesta página</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="table-responsive shadow-sm rounded">
-        <table class="table table-dark table-striped align-middle">
-            <thead>
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+            <div>
+                <h2 class="h5 mb-0">Movimentos de estoque</h2>
+                <small class="text-secondary">Mais recentes primeiro · @Model.Registros.Count registro(s) nesta página</small>
+            </div>
+            @if (Model.TotalPaginas > 0)
+            {
+                <span class="badge text-bg-light border text-secondary">Página @Model.PaginaAtual de @Model.TotalPaginas</span>
+            }
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle mb-0">
+                <thead class="table-dark">
                 <tr>
-                    <th>ID</th>
-                    <th>Data / Hora</th>
-                    <th>Leite Utilizado</th>
-                    <th>Qtd (Kg)</th>
-                    <th>Bobina</th>
-                    <th>Fardo</th>
-                    <th>Destino</th>
+                    <th class="text-nowrap">Data / hora</th>
+                    <th>Ordem de produção</th>
+                    <th>Insumo movimentado</th>
+                    <th>Categoria</th>
+                    <th class="text-end">Quantidade</th>
+                    <th>Lote da bobina</th>
                 </tr>
-            </thead>
-            <tbody>
-                @if (Model != null && Model.Any())
+                </thead>
+                <tbody>
+                @if (Model.Registros.Count > 0)
                 {
-                    @foreach (var item in Model)
+                    @foreach (var movimento in Model.Registros)
                     {
                         <tr>
-                            <td>@item.Id</td>
-                            <td>@item.DataProducao.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td><strong>@item.LeiteUtilizado</strong></td>
-                            <td>@item.Quantidade.ToString("N2")</td>
-                            <td><span class="badge bg-info text-dark">@item.BobinaUtilizada</span></td>
-                            <td><span class="badge bg-warning text-dark">@item.FardoUtilizado</span></td>
-                            <td>@item.Destino</td>
+                            <td class="text-nowrap">
+                                <strong>@movimento.DataMovimentacao.ToString("dd/MM/yyyy")</strong>
+                                <small class="d-block text-secondary">@movimento.DataMovimentacao.ToString("HH:mm")</small>
+                            </td>
+                            <td>
+                                @if (movimento.IdOrdem.HasValue)
+                                {
+                                    <span class="badge rounded-pill text-bg-success mb-1">Com OP</span>
+                                    <strong class="d-block">@(string.IsNullOrWhiteSpace(movimento.LoteOrdem) ? "Lote não informado" : movimento.LoteOrdem)</strong>
+                                    <small class="text-secondary">OP @movimento.IdOrdem</small>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill text-bg-warning">Sem OP associada</span>
+                                }
+                            </td>
+                            <td>
+                                <strong class="d-block">@(string.IsNullOrWhiteSpace(movimento.Insumo) ? "Insumo não identificado" : movimento.Insumo)</strong>
+                                <small class="text-secondary">Insumo @movimento.IdInsumo · Movimento @movimento.IdMovimentacao</small>
+                            </td>
+                            <td>
+                                @if (string.IsNullOrWhiteSpace(movimento.Categoria))
+                                {
+                                    <span class="text-secondary">Não informada</span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill text-bg-light border">@movimento.Categoria</span>
+                                }
+                            </td>
+                            <td class="text-end text-nowrap fw-semibold">
+                                @movimento.QuantidadeConsumida.ToString("N2", cultura)
+                                <small class="text-secondary">@(string.IsNullOrWhiteSpace(movimento.UnidadeMedida) ? "" : movimento.UnidadeMedida)</small>
+                            </td>
+                            <td>
+                                @(string.IsNullOrWhiteSpace(movimento.LoteBobina) ? "Não informado" : movimento.LoteBobina)
+                            </td>
                         </tr>
                     }
                 }
                 else
                 {
                     <tr>
-                        <td colspan="7" class="text-center py-4">Nenhum registo de rastreabilidade encontrado.</td>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="fs-4 mb-2">Nenhum movimento encontrado</div>
+                            <div class="text-secondary">Altere os filtros ou limpe a pesquisa para ver outros registros.</div>
+                        </td>
                     </tr>
                 }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
+
+    @if (Model.TotalPaginas > 1)
+    {
+        <nav aria-label="Paginação da rastreabilidade" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(Model.PaginaAtual <= 1 ? "disabled" : "")">
+                    @if (Model.PaginaAtual <= 1)
+                    {
+                        <span class="page-link">Anterior</span>
+                    }
+                    else
+                    {
+                        <a class="page-link" asp-controller="Rastreio" asp-action="Index"
+                           asp-route-page="@(Model.PaginaAtual - 1)" asp-route-pesquisa="@Model.Pesquisa"
+                           asp-route-dataInicial="@Model.DataInicial" asp-route-dataFinal="@Model.DataFinal"
+                           asp-route-vinculo="@Model.Vinculo">Anterior</a>
+                    }
+                </li>
+                <li class="page-item disabled">
+                    <span class="page-link">Página @Model.PaginaAtual de @Model.TotalPaginas</span>
+                </li>
+                <li class="page-item @(Model.PaginaAtual >= Model.TotalPaginas ? "disabled" : "")">
+                    @if (Model.PaginaAtual >= Model.TotalPaginas)
+                    {
+                        <span class="page-link">Próxima</span>
+                    }
+                    else
+                    {
+                        <a class="page-link" asp-controller="Rastreio" asp-action="Index"
+                           asp-route-page="@(Model.PaginaAtual + 1)" asp-route-pesquisa="@Model.Pesquisa"
+                           asp-route-dataInicial="@Model.DataInicial" asp-route-dataFinal="@Model.DataFinal"
+                           asp-route-vinculo="@Model.Vinculo">Próxima</a>
+                    }
+                </li>
+            </ul>
+        </nav>
+    }
 </div>
