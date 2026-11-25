@@ -200,6 +200,12 @@
             @foreach (var ordem in Model.Ordens)
             {
                 var totalPlanejado = ordem.Produtos.Sum(produto => produto.QuantidadeFardos);
+                var totalFardosVinculados = ordem.Produtos
+                    .Where(produto => produto.QuantidadeFardosBaixados.HasValue)
+                    .Sum(produto => produto.QuantidadeFardosBaixados.GetValueOrDefault());
+                var podeCompararTotalFardos =
+                    ordem.QuantidadeMovimentosFardoSemProduto == 0 &&
+                    ordem.QuantidadeMovimentosFardoForaDoPlano == 0;
                 var statusAberto = string.Equals(ordem.Status, "Em Aberto", StringComparison.OrdinalIgnoreCase);
                 <details class="card border-0 shadow-sm mb-3">
                     <summary class="op-summary card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-3 py-3">
@@ -263,7 +269,9 @@
                                             <thead>
                                                 <tr>
                                                     <th>Produto</th>
-                                                    <th class="text-end">Fardos previstos</th>
+                                                    <th class="text-end">Planejado</th>
+                                                    <th class="text-end">Baixado</th>
+                                                    <th class="text-end">Diferença</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -272,6 +280,29 @@
                                                     <tr>
                                                         <td>@produto.Nome</td>
                                                         <td class="text-end text-nowrap">@produto.QuantidadeFardos.ToString("N0", cultura)</td>
+                                                        <td class="text-end text-nowrap">
+                                                            @if (produto.QuantidadeFardosBaixados.HasValue)
+                                                            {
+                                                                @produto.QuantidadeFardosBaixados.Value.ToString("N0", cultura)
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-secondary">Sem baixa identificada</span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-end text-nowrap">
+                                                            @if (produto.DiferencaFardos.HasValue)
+                                                            {
+                                                                var diferenca = produto.DiferencaFardos.Value;
+                                                                <span class="badge @(diferenca == 0 ? "text-bg-success" : "text-bg-warning")">
+                                                                    @(diferenca > 0 ? "+" : "")@diferenca.ToString("N0", cultura)
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-secondary">—</span>
+                                                            }
+                                                        </td>
                                                     </tr>
                                                 }
                                             </tbody>
@@ -279,10 +310,56 @@
                                                 <tr class="fw-bold">
                                                     <td>Total planejado</td>
                                                     <td class="text-end">@totalPlanejado.ToString("N0", cultura)</td>
+                                                    <td class="text-end">
+                                                        @if (podeCompararTotalFardos)
+                                                        {
+                                                            @totalFardosVinculados.ToString("N0", cultura)
+                                                        }
+                                                        else
+                                                        {
+                                                            <span title="Existem baixas históricas sem vínculo de produto.">@totalFardosVinculados.ToString("N0", cultura) parcial</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-end">
+                                                        @if (podeCompararTotalFardos)
+                                                        {
+                                                            var diferencaTotal = totalFardosVinculados - totalPlanejado;
+                                                            <span class="badge @(diferencaTotal == 0 ? "text-bg-success" : "text-bg-warning")">
+                                                                @(diferencaTotal > 0 ? "+" : "")@diferencaTotal.ToString("N0", cultura)
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-secondary">Incompleta</span>
+                                                        }
+                                                    </td>
                                                 </tr>
                                             </tfoot>
                                         </table>
                                     </div>
+                                    @if (ordem.QuantidadeMovimentosFardoSemProduto > 0 ||
+                                        ordem.QuantidadeMovimentosFardoForaDoPlano > 0)
+                                    {
+                                        <div class="alert alert-warning py-2 mt-3 mb-0 small">
+                                            @if (ordem.QuantidadeMovimentosFardoSemProduto > 0)
+                                            {
+                                                <span>
+                                                    @ordem.QuantidadeMovimentosFardoSemProduto baixa(s) histórica(s),
+                                                    com @ordem.TotalFardosSemProduto.ToString("N0", cultura) fardo(s),
+                                                    não possuem produto vinculado.
+                                                </span>
+                                            }
+                                            @if (ordem.QuantidadeMovimentosFardoForaDoPlano > 0)
+                                            {
+                                                <span>
+                                                    @ordem.QuantidadeMovimentosFardoForaDoPlano baixa(s),
+                                                    com @ordem.TotalFardosForaDoPlano.ToString("N0", cultura) fardo(s),
+                                                    estão vinculadas a produtos fora do plano desta OP.
+                                                </span>
+                                            }
+                                            Esses valores não entram na comparação por produto.
+                                        </div>
+                                    }
                                 }
                                 else
                                 {
@@ -312,7 +389,10 @@
                                         <div class="rounded border bg-light p-3 h-100">
                                             <div class="small text-secondary">Fardos</div>
                                             <div class="fw-bold">@ordem.TotalFardos.ToString("N0", cultura) UN</div>
-                                            <small class="text-secondary">@ordem.QuantidadeMovimentosFardo movimento(s) · lote não se aplica</small>
+                                            <small class="text-secondary">
+                                                @ordem.QuantidadeMovimentosFardo movimento(s) ·
+                                            @(ordem.QuantidadeMovimentosFardoSemProduto + ordem.QuantidadeMovimentosFardoForaDoPlano) sem comparação por produto · lote não se aplica
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
@@ -329,6 +409,7 @@
                                             <th>Data / hora</th>
                                             <th>Categoria</th>
                                             <th>Insumo</th>
+                                            <th>Produto da OP</th>
                                             <th class="text-end">Quantidade</th>
                                             <th>Lote da bobina</th>
                                         </tr>
@@ -338,12 +419,29 @@
                                         {
                                             var movimentoBobina = movimento.Categoria?.Contains("bobina", StringComparison.OrdinalIgnoreCase) == true
                                                 || movimento.Insumo?.StartsWith("Film", StringComparison.OrdinalIgnoreCase) == true;
+                                            var movimentoFardo = movimento.Categoria?.Contains("fardo", StringComparison.OrdinalIgnoreCase) == true
+                                                || movimento.Insumo?.StartsWith("Fardo", StringComparison.OrdinalIgnoreCase) == true;
                                             <tr>
                                                 <td class="text-nowrap">@movimento.DataMovimentacao.ToString("dd/MM/yyyy HH:mm")</td>
                                                 <td>@(string.IsNullOrWhiteSpace(movimento.Categoria) ? "Não informada" : movimento.Categoria)</td>
                                                 <td>
                                                     <span class="fw-semibold">@movimento.Insumo</span>
                                                     <small class="d-block text-secondary">Movimento @movimento.IdMovimentacao</small>
+                                                </td>
+                                                <td>
+                                                    @if (movimentoFardo && movimento.IdProduto.HasValue)
+                                                    {
+                                                        var produtoVinculado = ordem.Produtos.FirstOrDefault(produto => produto.IdInsumo == movimento.IdProduto.Value);
+                                                        @(produtoVinculado?.Nome ?? $"Produto ID {movimento.IdProduto.Value} fora dos itens planejados")
+                                                    }
+                                                    else if (movimentoFardo)
+                                                    {
+                                                        <span class="text-secondary">Histórico sem vínculo</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-secondary">—</span>
+                                                    }
                                                 </td>
                                                 <td class="text-end text-nowrap">
                                                     @movimento.QuantidadeConsumida.ToString("N2", cultura)

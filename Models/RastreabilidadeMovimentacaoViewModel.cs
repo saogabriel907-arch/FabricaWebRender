@@ -6,6 +6,7 @@ namespace fabricawebrender.Models
         public long? IdOrdem { get; set; }
         public string? LoteOrdem { get; set; }
         public long IdInsumo { get; set; }
+        public long? IdProduto { get; set; }
         public string? Insumo { get; set; }
         public string? Categoria { get; set; }
         public string? UnidadeMedida { get; set; }

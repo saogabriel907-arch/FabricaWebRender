@@ -21,6 +21,10 @@ namespace fabricawebrender.Models
         public decimal TotalFardos { get; set; }
         public decimal TotalMateriaPrima { get; set; }
         public int LotesBobinaRegistrados { get; set; }
+        public decimal TotalFardosSemProduto { get; set; }
+        public int QuantidadeMovimentosFardoSemProduto { get; set; }
+        public decimal TotalFardosForaDoPlano { get; set; }
+        public int QuantidadeMovimentosFardoForaDoPlano { get; set; }
     }
 
     public class RastreabilidadeProdutoOrdemViewModel
@@ -28,5 +32,8 @@ namespace fabricawebrender.Models
         public long IdInsumo { get; set; }
         public string Nome { get; set; } = string.Empty;
         public decimal QuantidadeFardos { get; set; }
+        public decimal? QuantidadeFardosBaixados { get; set; }
+        public decimal? DiferencaFardos { get; set; }
+        public int QuantidadeMovimentosFardo { get; set; }
     }
 }

@@ -222,7 +222,7 @@ namespace fabricawebrender.Controllers
         {
             var filtros = new List<string>
             {
-                "select=id_movimentacao,id_ordem,lote_ordem,id_insumo,insumo,categoria,unidade_medida,quantidade_consumida,data_movimentacao,lote_bobina",
+                "select=id_movimentacao,id_ordem,lote_ordem,id_insumo,id_produto,insumo,categoria,unidade_medida,quantidade_consumida,data_movimentacao,lote_bobina",
                 "id_ordem=is.null",
                 "order=data_movimentacao.desc,id_movimentacao.desc",
                 $"limit={UnlinkedMovementPageSize}",
@@ -289,7 +289,7 @@ namespace fabricawebrender.Controllers
             while (true)
             {
                 string path =
-                    "rastreabilidade_movimentacoes?select=id_movimentacao,id_ordem,lote_ordem,id_insumo,insumo,categoria,unidade_medida,quantidade_consumida,data_movimentacao,lote_bobina" +
+                    "rastreabilidade_movimentacoes?select=id_movimentacao,id_ordem,lote_ordem,id_insumo,id_produto,insumo,categoria,unidade_medida,quantidade_consumida,data_movimentacao,lote_bobina" +
                     $"&id_ordem={Uri.EscapeDataString($"in.({idsOrdens})")}" +
                     "&order=data_movimentacao.desc,id_movimentacao.desc" +
                     $"&limit={RelatedMovementPageSize}&offset={offset}";
@@ -362,6 +362,35 @@ namespace fabricawebrender.Controllers
             ordem.TotalBobinas = bobinas.Sum(movimento => movimento.QuantidadeConsumida);
             ordem.TotalFardos = fardos.Sum(movimento => movimento.QuantidadeConsumida);
             ordem.TotalMateriaPrima = materiasPrimas.Sum(movimento => movimento.QuantidadeConsumida);
+            var fardosPorProduto = fardos
+                .Where(movimento => movimento.IdProduto.HasValue)
+                .GroupBy(movimento => movimento.IdProduto!.Value)
+                .ToDictionary(grupo => grupo.Key, grupo => grupo.ToList());
+            var idsProdutosPlanejados = ordem.Produtos
+                .Select(produto => produto.IdInsumo)
+                .ToHashSet();
+
+            foreach (RastreabilidadeProdutoOrdemViewModel produto in ordem.Produtos)
+            {
+                if (!fardosPorProduto.TryGetValue(produto.IdInsumo, out List<RastreabilidadeMovimentacaoViewModel>? baixas))
+                {
+                    continue;
+                }
+
+                produto.QuantidadeFardosBaixados = baixas.Sum(movimento => movimento.QuantidadeConsumida);
+                produto.DiferencaFardos = produto.QuantidadeFardosBaixados.Value - produto.QuantidadeFardos;
+                produto.QuantidadeMovimentosFardo = baixas.Count;
+            }
+
+            var fardosSemProduto = fardos.Where(movimento => !movimento.IdProduto.HasValue).ToList();
+            var fardosForaDoPlano = fardos
+                .Where(movimento => movimento.IdProduto.HasValue &&
+                    !idsProdutosPlanejados.Contains(movimento.IdProduto.Value))
+                .ToList();
+            ordem.TotalFardosSemProduto = fardosSemProduto.Sum(movimento => movimento.QuantidadeConsumida);
+            ordem.QuantidadeMovimentosFardoSemProduto = fardosSemProduto.Count;
+            ordem.TotalFardosForaDoPlano = fardosForaDoPlano.Sum(movimento => movimento.QuantidadeConsumida);
+            ordem.QuantidadeMovimentosFardoForaDoPlano = fardosForaDoPlano.Count;
             ordem.LotesBobinaRegistrados = bobinas
                 .Select(movimento => movimento.LoteBobina?.Trim())
                 .Where(lote => !string.IsNullOrWhiteSpace(lote))
