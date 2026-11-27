@@ -49,10 +49,16 @@ namespace FabricaWebRender.Controllers
             string gramatura = "Padrão 400g (175g/fardo)";
             bool vitaLeite350g = bobina.nome.Contains("Vita Leite", StringComparison.OrdinalIgnoreCase) &&
                                  Regex.IsMatch(bobina.nome, @"(?<!\d)350\s*g(?!\w)", RegexOptions.IgnoreCase);
+            bool bobina800g = Regex.IsMatch(bobina.nome, @"(?<!\d)800\s*g(?!\w)", RegexOptions.IgnoreCase);
             if (vitaLeite350g)
             {
                 consumoBobinaGramas = 174m;
                 gramatura = "Vita Leite 350g (174g/fardo)";
+            }
+            else if (bobina800g)
+            {
+                consumoBobinaGramas = 129.6m;
+                gramatura = "800g (129,6g/fardo)";
             }
             else if (Regex.IsMatch(bobina.nome, @"(?<!\d)1\s*kg(?!\w)", RegexOptions.IgnoreCase))
             {
@@ -74,7 +80,7 @@ namespace FabricaWebRender.Controllers
                 : bobina.quantidade;
             decimal consumoBobinaKgPorFardo = consumoBobinaGramas / 1000m;
             decimal fardosEstimados = Math.Max(estoqueKg, 0m) / consumoBobinaKgPorFardo;
-            decimal leiteKgPorFardo = vitaLeite350g ? 10.5m : 10m;
+            decimal leiteKgPorFardo = vitaLeite350g ? 10.5m : bobina800g ? 9.6m : 10m;
 
             return new BobinaProducaoViewModel
             {
