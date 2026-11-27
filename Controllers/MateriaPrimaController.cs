@@ -23,7 +23,7 @@ public class MateriaPrimaController : Controller
     public async Task<IActionResult> Index()
     {
         var materiasPrimas = new List<MateriaPrimaViewModel>();
-        var historicoEntradas = new List<HistoricoMateriaPrimaViewModel>();
+        var historicoPorInsumo = new Dictionary<long, HistoricoMateriaPrimaViewModel>();
 
         try
         {
@@ -49,10 +49,10 @@ public class MateriaPrimaController : Controller
                 {
                     registrosRecebidos++;
                     string categoria = GetString(element, "categoria");
-                    string? categoriaMateriaPrima = NormalizarCategoriaMateriaPrima(categoria);
                     decimal quantidade = GetDecimal(element, "quantidade");
 
-                    if (categoriaMateriaPrima is null || quantidade <= 0)
+                    if ((!string.IsNullOrWhiteSpace(categoria) && !CategoriaEhMateriaPrima(categoria)) ||
+                        quantidade <= 0)
                     {
                         continue;
                     }
@@ -62,11 +62,9 @@ public class MateriaPrimaController : Controller
                     {
                         Id = GetInt64(element, "id_insumo"),
                         Nome = GetString(element, "nome"),
-                        Categoria = categoriaMateriaPrima,
+                        Categoria = categoria,
                         Quantidade = quantidade,
                         UnidadeMedida = GetString(element, "unidade_medida", "KG"),
-                        Marca = GetString(element, "marca", "-"),
-                        LoteFabricante = GetString(element, "lote_fabricante", "-"),
                         AtualizadoEm = atualizadoEm
                     });
                 }
@@ -80,7 +78,7 @@ public class MateriaPrimaController : Controller
             }
 
             const string consultaHistorico =
-                "HistoricoLeiteSoro?select=id,Insumo,DataHora,Peso,Fornecedor,Lote,DataFabricacao,DataValidade,NotaFiscal,Sif,OutrosDetalhes&order=DataHora.desc,id.desc";
+                "HistoricoLeiteSoro?select=id,Insumo,DataHora,Peso,Fornecedor,Lote,DataFabricacao,DataValidade,NotaFiscal,OutrosDetalhes&order=DataHora.desc,id.desc";
             offset = 0;
 
             while (true)
@@ -100,20 +98,21 @@ public class MateriaPrimaController : Controller
                 {
                     registrosRecebidos++;
                     string observacoes = GetString(element, "OutrosDetalhes");
+                    long insumoId = ParseId(ObterDetalhe(observacoes, "InsumoId"));
 
-                    historicoEntradas.Add(new HistoricoMateriaPrimaViewModel
+                    if (insumoId <= 0 || historicoPorInsumo.ContainsKey(insumoId))
                     {
-                        Id = GetInt64(element, "id"),
-                        Insumo = GetString(element, "Insumo", "Desconhecido"),
-                        DataHora = GetDateTimeOffset(element, "DataHora"),
-                        Quantidade = GetDecimal(element, "Peso"),
-                        Tipo = GetString(element, "Tipo", ObterDetalhe(observacoes, "Tipo")),
+                        continue;
+                    }
+
+                    historicoPorInsumo.Add(insumoId, new HistoricoMateriaPrimaViewModel
+                    {
+                        Tipo = ObterDetalhe(observacoes, "Tipo"),
                         Fornecedor = GetString(element, "Fornecedor", ObterDetalhe(observacoes, "Fornecedor")),
                         Lote = GetString(element, "Lote", ObterDetalhe(observacoes, "Lote")),
                         DataFabricacao = GetString(element, "DataFabricacao", ObterDetalhe(observacoes, "Fab")),
                         DataValidade = GetString(element, "DataValidade", ObterDetalhe(observacoes, "Val")),
-                        NotaFiscal = GetString(element, "NotaFiscal", ObterDetalhe(observacoes, "NF")),
-                        Sif = GetString(element, "Sif", ObterDetalhe(observacoes, "SIF"))
+                        NotaFiscal = GetString(element, "NotaFiscal", ObterDetalhe(observacoes, "NF"))
                     });
                 }
 
@@ -131,27 +130,103 @@ public class MateriaPrimaController : Controller
                 "Não foi possível consultar os dados de matérias-primas: " + ex.Message);
         }
 
-        return View(new MateriaPrimaPaginaViewModel
+        var estoqueExibido = new List<MateriaPrimaViewModel>();
+        foreach (var item in materiasPrimas)
         {
-            Estoque = materiasPrimas
-                .OrderBy(item => item.Nome, StringComparer.CurrentCultureIgnoreCase)
-                .ToList(),
-            HistoricoEntradas = historicoEntradas
-        });
+            if (!historicoPorInsumo.TryGetValue(item.Id, out var entrada))
+            {
+                continue;
+            }
+
+            string? tipo = NormalizarTipoMateriaPrima(entrada.Tipo, item.Categoria);
+            if (tipo is null)
+            {
+                continue;
+            }
+
+            item.Tipo = tipo;
+            item.Fornecedor = entrada.Fornecedor;
+            item.Lote = entrada.Lote;
+            item.DataFabricacao = FormatarData(entrada.DataFabricacao);
+            item.DataValidade = FormatarData(entrada.DataValidade);
+            item.NotaFiscal = entrada.NotaFiscal;
+            estoqueExibido.Add(item);
+        }
+
+        return View(estoqueExibido
+            .OrderBy(item => item.Nome, StringComparer.CurrentCultureIgnoreCase)
+            .ToList());
     }
 
-    private static string? NormalizarCategoriaMateriaPrima(string categoria)
+    private static bool CategoriaEhMateriaPrima(string categoria)
     {
         string normalizada = RemoverAcentos(categoria).Trim();
         return normalizada.Equals("materia prima", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("leite", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("soro", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("soro em po", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("leite desnatado", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("permeado", StringComparison.OrdinalIgnoreCase) ||
-               normalizada.Equals("descasque", StringComparison.OrdinalIgnoreCase) ||
-               string.IsNullOrWhiteSpace(normalizada)
-            ? "Matéria Prima"
-            : null;
+               normalizada.Equals("integral", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("leite integral", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("instantaneo", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("leite instantaneo", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("desnatado", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? NormalizarTipoMateriaPrima(string tipo, string categoria)
+    {
+        string valor = string.IsNullOrWhiteSpace(tipo) || tipo == "-"
+            ? categoria
+            : tipo;
+        string normalizada = RemoverAcentos(valor).Trim();
+
+        if (normalizada.Equals("integral", StringComparison.OrdinalIgnoreCase) ||
+            normalizada.Equals("leite integral", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Integral";
+        }
+
+        if (normalizada.Equals("instantaneo", StringComparison.OrdinalIgnoreCase) ||
+            normalizada.Equals("leite instantaneo", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Instantâneo";
+        }
+
+        if (normalizada.Equals("permeado", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Permeado";
+        }
+
+        if (normalizada.Equals("desnatado", StringComparison.OrdinalIgnoreCase) ||
+            normalizada.Equals("leite desnatado", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Desnatado";
+        }
+
+        if (normalizada.Equals("soro", StringComparison.OrdinalIgnoreCase) ||
+            normalizada.Equals("soro em po", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Soro";
+        }
+
+        return null;
+    }
+
+    private static string FormatarData(string value)
+    {
+        if (value == "-")
+        {
+            return value;
+        }
+
+        return DateTime.TryParse(
+            value,
+            CultureInfo.GetCultureInfo("pt-BR"),
+            DateTimeStyles.AllowWhiteSpaces,
+            out DateTime data)
+            ? data.ToString("dd/MM/yyyy")
+            : value;
     }
 
     private static string GetString(JsonElement element, string property, string fallback = "")
@@ -179,6 +254,13 @@ public class MateriaPrimaController : Controller
         }
 
         return "-";
+    }
+
+    private static long ParseId(string value)
+    {
+        return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long id)
+            ? id
+            : 0;
     }
 
     private static long GetInt64(JsonElement element, string property)
@@ -233,36 +315,28 @@ public class MateriaPrimaController : Controller
     }
 }
 
-public sealed class MateriaPrimaPaginaViewModel
-{
-    public IReadOnlyList<MateriaPrimaViewModel> Estoque { get; set; } = Array.Empty<MateriaPrimaViewModel>();
-    public IReadOnlyList<HistoricoMateriaPrimaViewModel> HistoricoEntradas { get; set; } =
-        Array.Empty<HistoricoMateriaPrimaViewModel>();
-}
-
 public sealed class MateriaPrimaViewModel
 {
     public long Id { get; set; }
     public string Nome { get; set; } = string.Empty;
     public string Categoria { get; set; } = string.Empty;
+    public string Tipo { get; set; } = "-";
     public decimal Quantidade { get; set; }
     public string UnidadeMedida { get; set; } = "KG";
-    public string Marca { get; set; } = "-";
-    public string LoteFabricante { get; set; } = "-";
-    public DateTimeOffset? AtualizadoEm { get; set; }
-}
-
-public sealed class HistoricoMateriaPrimaViewModel
-{
-    public long Id { get; set; }
-    public string Insumo { get; set; } = "-";
-    public string Tipo { get; set; } = "-";
-    public DateTimeOffset? DataHora { get; set; }
-    public decimal Quantidade { get; set; }
     public string Fornecedor { get; set; } = "-";
     public string Lote { get; set; } = "-";
     public string DataFabricacao { get; set; } = "-";
     public string DataValidade { get; set; } = "-";
     public string NotaFiscal { get; set; } = "-";
-    public string Sif { get; set; } = "-";
+    public DateTimeOffset? AtualizadoEm { get; set; }
+}
+
+public sealed class HistoricoMateriaPrimaViewModel
+{
+    public string Tipo { get; set; } = "-";
+    public string Fornecedor { get; set; } = "-";
+    public string Lote { get; set; } = "-";
+    public string DataFabricacao { get; set; } = "-";
+    public string DataValidade { get; set; } = "-";
+    public string NotaFiscal { get; set; } = "-";
 }
