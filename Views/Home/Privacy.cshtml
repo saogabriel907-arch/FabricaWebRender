@@ -119,9 +119,8 @@
     </div>
 
     <div class="alert alert-info">
-        <strong>Regra usada:</strong> peso do pacote vazio multiplicado pela quantidade no fardo:
-        200 g: 50 x 0,260 g; 400 g: 25 x 0,175 g; Vita Leite 350 g: 30 x 0,174 g;
-        800 g: 12 x 0,130 g; 1 kg: 10 x 0,120 g.
+        <strong>Consumo total de bobina por fardo:</strong> 200 g = 260 g; 400 g = 175 g;
+        Vita Leite 350 g = 174 g; 800 g = 129,6 g; 1 kg = 120 g.
         O fardo de 800 g corresponde a 9,6 kg de leite e o Vita Leite 350 g a 10,5 kg.
         Valores te&oacute;ricos, sem descontar perdas de produ&ccedil;&atilde;o.
     </div>
@@ -150,14 +149,8 @@
                         {
                             <tr>
                                 <td class="fw-semibold">@bobina.Nome</td>
-                                <td>
-                                    @bobina.GramaturaIdentificada
-                                    <small class="d-block text-muted">
-                                        @bobina.PacotesPorFardo x @bobina.PesoPacoteVazioGramas.ToString("N3", cultura) g =
-                                        @bobina.ConsumoBobinaGramasPorFardo.ToString("N3", cultura) g/fardo
-                                    </small>
-                                </td>
-                                <td class="text-end">@bobina.ConsumoBobinaKgPorFardo.ToString("N6", cultura) kg</td>
+                                <td>@bobina.GramaturaIdentificada</td>
+                                <td class="text-end">@bobina.ConsumoBobinaKgPorFardo.ToString("N4", cultura) kg</td>
                                 <td class="text-end">@bobina.EstoqueAtualKg.ToString("N2", cultura) kg</td>
                                 <td class="text-end fw-bold">@bobina.FardosEstimados.ToString("N2", cultura)</td>
                                 <td class="text-end">@bobina.LeiteKgPorFardo.ToString("N2", cultura) kg</td>
