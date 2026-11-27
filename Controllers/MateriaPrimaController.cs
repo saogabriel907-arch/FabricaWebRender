@@ -49,10 +49,10 @@ public class MateriaPrimaController : Controller
                 {
                     registrosRecebidos++;
                     string categoria = GetString(element, "categoria");
+                    string? categoriaMateriaPrima = NormalizarCategoriaMateriaPrima(categoria);
                     decimal quantidade = GetDecimal(element, "quantidade");
 
-                    if ((!string.IsNullOrWhiteSpace(categoria) && !CategoriaEhMateriaPrima(categoria)) ||
-                        quantidade <= 0)
+                    if (categoriaMateriaPrima is null || quantidade <= 0)
                     {
                         continue;
                     }
@@ -133,23 +133,18 @@ public class MateriaPrimaController : Controller
         var estoqueExibido = new List<MateriaPrimaViewModel>();
         foreach (var item in materiasPrimas)
         {
-            if (!historicoPorInsumo.TryGetValue(item.Id, out var entrada))
+            item.Tipo = NormalizarTipoMateriaPrima("-", item.Categoria) ?? "-";
+            if (historicoPorInsumo.TryGetValue(item.Id, out var entrada))
             {
-                continue;
+                string? tipo = NormalizarTipoMateriaPrima(entrada.Tipo, item.Categoria);
+                item.Tipo = tipo ?? (entrada.Tipo == "-" ? item.Tipo : entrada.Tipo);
+                item.Fornecedor = entrada.Fornecedor;
+                item.Lote = entrada.Lote;
+                item.DataFabricacao = FormatarData(entrada.DataFabricacao);
+                item.DataValidade = FormatarData(entrada.DataValidade);
+                item.NotaFiscal = entrada.NotaFiscal;
             }
 
-            string? tipo = NormalizarTipoMateriaPrima(entrada.Tipo, item.Categoria);
-            if (tipo is null)
-            {
-                continue;
-            }
-
-            item.Tipo = tipo;
-            item.Fornecedor = entrada.Fornecedor;
-            item.Lote = entrada.Lote;
-            item.DataFabricacao = FormatarData(entrada.DataFabricacao);
-            item.DataValidade = FormatarData(entrada.DataValidade);
-            item.NotaFiscal = entrada.NotaFiscal;
             estoqueExibido.Add(item);
         }
 
@@ -158,20 +153,18 @@ public class MateriaPrimaController : Controller
             .ToList());
     }
 
-    private static bool CategoriaEhMateriaPrima(string categoria)
+    private static string? NormalizarCategoriaMateriaPrima(string categoria)
     {
         string normalizada = RemoverAcentos(categoria).Trim();
         return normalizada.Equals("materia prima", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("leite", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("soro", StringComparison.OrdinalIgnoreCase) ||
-               normalizada.Equals("soro em po", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("leite desnatado", StringComparison.OrdinalIgnoreCase) ||
                normalizada.Equals("permeado", StringComparison.OrdinalIgnoreCase) ||
-               normalizada.Equals("integral", StringComparison.OrdinalIgnoreCase) ||
-               normalizada.Equals("leite integral", StringComparison.OrdinalIgnoreCase) ||
-               normalizada.Equals("instantaneo", StringComparison.OrdinalIgnoreCase) ||
-               normalizada.Equals("leite instantaneo", StringComparison.OrdinalIgnoreCase) ||
-               normalizada.Equals("desnatado", StringComparison.OrdinalIgnoreCase);
+               normalizada.Equals("descasque", StringComparison.OrdinalIgnoreCase) ||
+               string.IsNullOrWhiteSpace(normalizada)
+            ? "Matéria Prima"
+            : null;
     }
 
     private static string? NormalizarTipoMateriaPrima(string tipo, string categoria)
