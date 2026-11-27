@@ -45,39 +45,41 @@ namespace FabricaWebRender.Controllers
 
         private static BobinaProducaoViewModel CalcularProducao(InsumoEstoqueViewModel bobina)
         {
-            decimal consumoBobinaGramas = 175m;
-            string gramatura = "Padrão 400g (175g/fardo)";
+            decimal pesoPacoteVazioGramas = 0.175m;
+            int pacotesPorFardo = 25;
+            string gramatura = "400g";
             bool vitaLeite350g = bobina.nome.Contains("Vita Leite", StringComparison.OrdinalIgnoreCase) &&
                                  Regex.IsMatch(bobina.nome, @"(?<!\d)350\s*g(?!\w)", RegexOptions.IgnoreCase);
             bool bobina800g = Regex.IsMatch(bobina.nome, @"(?<!\d)800\s*g(?!\w)", RegexOptions.IgnoreCase);
             if (vitaLeite350g)
             {
-                consumoBobinaGramas = 174m;
-                gramatura = "Vita Leite 350g (174g/fardo)";
+                pesoPacoteVazioGramas = 0.174m;
+                pacotesPorFardo = 30;
+                gramatura = "Vita Leite 350g";
             }
             else if (bobina800g)
             {
-                consumoBobinaGramas = 129.6m;
-                gramatura = "800g (129,6g/fardo)";
+                pesoPacoteVazioGramas = 0.130m;
+                pacotesPorFardo = 12;
+                gramatura = "800g";
             }
             else if (Regex.IsMatch(bobina.nome, @"(?<!\d)1\s*kg(?!\w)", RegexOptions.IgnoreCase))
             {
-                consumoBobinaGramas = 120m;
-                gramatura = "1kg (120g/fardo)";
+                pesoPacoteVazioGramas = 0.120m;
+                pacotesPorFardo = 10;
+                gramatura = "1kg";
             }
             else if (Regex.IsMatch(bobina.nome, @"(?<!\d)200\s*g(?!\w)", RegexOptions.IgnoreCase))
             {
-                consumoBobinaGramas = 260m;
-                gramatura = "200g (260g/fardo)";
-            }
-            else if (Regex.IsMatch(bobina.nome, @"(?<!\d)400\s*g(?!\w)", RegexOptions.IgnoreCase))
-            {
-                gramatura = "400g (175g/fardo)";
+                pesoPacoteVazioGramas = 0.260m;
+                pacotesPorFardo = 50;
+                gramatura = "200g";
             }
 
             decimal estoqueKg = bobina.unidade_medida.Trim().Equals("g", StringComparison.OrdinalIgnoreCase)
                 ? bobina.quantidade / 1000m
                 : bobina.quantidade;
+            decimal consumoBobinaGramas = pesoPacoteVazioGramas * pacotesPorFardo;
             decimal consumoBobinaKgPorFardo = consumoBobinaGramas / 1000m;
             decimal fardosEstimados = Math.Max(estoqueKg, 0m) / consumoBobinaKgPorFardo;
             decimal leiteKgPorFardo = vitaLeite350g ? 10.5m : bobina800g ? 9.6m : 10m;
@@ -86,6 +88,9 @@ namespace FabricaWebRender.Controllers
             {
                 Nome = bobina.nome,
                 GramaturaIdentificada = gramatura,
+                PacotesPorFardo = pacotesPorFardo,
+                PesoPacoteVazioGramas = pesoPacoteVazioGramas,
+                ConsumoBobinaGramasPorFardo = consumoBobinaGramas,
                 ConsumoBobinaKgPorFardo = consumoBobinaKgPorFardo,
                 EstoqueAtualKg = estoqueKg,
                 FardosEstimados = fardosEstimados,

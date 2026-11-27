@@ -12,6 +12,9 @@ public sealed class BobinaProducaoViewModel
 {
     public string Nome { get; set; } = "";
     public string GramaturaIdentificada { get; set; } = "";
+    public int PacotesPorFardo { get; set; }
+    public decimal PesoPacoteVazioGramas { get; set; }
+    public decimal ConsumoBobinaGramasPorFardo { get; set; }
     public decimal ConsumoBobinaKgPorFardo { get; set; }
     public decimal EstoqueAtualKg { get; set; }
     public decimal FardosEstimados { get; set; }
