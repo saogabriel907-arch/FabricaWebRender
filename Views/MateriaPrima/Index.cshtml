@@ -1,4 +1,4 @@
-@model IReadOnlyList<FabricaWebPortal.Controllers.MateriaPrimaViewModel>
+@model FabricaWebPortal.Controllers.MateriaPrimaPaginaViewModel
 
 @{
     ViewData["Title"] = "Matérias-Primas em Estoque";
@@ -10,7 +10,7 @@
             <h2>🧪 Matérias-Primas em Estoque</h2>
             <p class="text-muted mb-0">Somente insumos com saldo atual maior que zero.</p>
         </div>
-        <span class="badge text-bg-success fs-6">@Model.Count item(ns) disponível(is)</span>
+        <span class="badge text-bg-success fs-6">@Model.Estoque.Count item(ns) disponível(is)</span>
     </div>
 
     <div class="table-responsive mt-4">
@@ -28,9 +28,9 @@
                 </tr>
             </thead>
             <tbody>
-                @if (Model.Count > 0)
+                @if (Model.Estoque.Count > 0)
                 {
-                    @foreach (var item in Model)
+                    @foreach (var item in Model.Estoque)
                     {
                         <tr>
                             <td>@item.Id</td>
@@ -51,6 +51,61 @@
                     <tr>
                         <td colspan="8" class="text-center py-4">
                             Nenhuma matéria-prima com estoque disponível.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-5 mb-1">
+        <div>
+            <h3>Histórico de entradas</h3>
+            <p class="text-muted mb-0">Cada linha representa uma entrada registrada para a matéria-prima.</p>
+        </div>
+        <span class="badge text-bg-secondary fs-6">@Model.HistoricoEntradas.Count entrada(s)</span>
+    </div>
+
+    <div class="table-responsive mt-4">
+        <table class="table table-striped table-hover table-bordered align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Data da entrada</th>
+                    <th>Insumo</th>
+                    <th>Tipo</th>
+                    <th class="text-end">Quantidade</th>
+                    <th>Fornecedor</th>
+                    <th>Lote</th>
+                    <th>Fabricação</th>
+                    <th>Validade</th>
+                    <th>Nota fiscal</th>
+                    <th>SIF</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.HistoricoEntradas.Count > 0)
+                {
+                    @foreach (var entrada in Model.HistoricoEntradas)
+                    {
+                        <tr>
+                            <td>@(entrada.DataHora?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                            <td><strong>@entrada.Insumo</strong></td>
+                            <td>@entrada.Tipo</td>
+                            <td class="text-end">@entrada.Quantidade.ToString("N2")</td>
+                            <td>@entrada.Fornecedor</td>
+                            <td>@entrada.Lote</td>
+                            <td>@entrada.DataFabricacao</td>
+                            <td>@entrada.DataValidade</td>
+                            <td>@entrada.NotaFiscal</td>
+                            <td>@entrada.Sif</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="10" class="text-center py-4">
+                            Nenhuma entrada de matéria-prima foi encontrada.
                         </td>
                     </tr>
                 }

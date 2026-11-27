@@ -8,6 +8,7 @@ namespace FabricaWebPortal.Controllers;
 public class MateriaPrimaController : Controller
 {
     private const int TamanhoPaginaEstoque = 100;
+    private const int TamanhoPaginaHistorico = 500;
     private static readonly TimeZoneInfo FusoBrasilia =
         TimeZoneInfo.FindSystemTimeZoneById(
             OperatingSystem.IsWindows() ? "E. South America Standard Time" : "America/Sao_Paulo");
@@ -22,6 +23,7 @@ public class MateriaPrimaController : Controller
     public async Task<IActionResult> Index()
     {
         var materiasPrimas = new List<MateriaPrimaViewModel>();
+        var historicoEntradas = new List<HistoricoMateriaPrimaViewModel>();
 
         try
         {
@@ -76,16 +78,66 @@ public class MateriaPrimaController : Controller
 
                 offset += registrosRecebidos;
             }
+
+            const string consultaHistorico =
+                "HistoricoLeiteSoro?select=id,Insumo,DataHora,Peso,Fornecedor,Lote,DataFabricacao,DataValidade,NotaFiscal,Sif,OutrosDetalhes&order=DataHora.desc,id.desc";
+            offset = 0;
+
+            while (true)
+            {
+                using var response = await client.GetAsync(
+                    $"{consultaHistorico}&limit={TamanhoPaginaHistorico}&offset={offset}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return StatusCode(StatusCodes.Status502BadGateway,
+                        "Não foi possível carregar o histórico de entradas de matérias-primas.");
+                }
+
+                using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                int registrosRecebidos = 0;
+                foreach (var element in document.RootElement.EnumerateArray())
+                {
+                    registrosRecebidos++;
+                    string observacoes = GetString(element, "OutrosDetalhes");
+
+                    historicoEntradas.Add(new HistoricoMateriaPrimaViewModel
+                    {
+                        Id = GetInt64(element, "id"),
+                        Insumo = GetString(element, "Insumo", "Desconhecido"),
+                        DataHora = GetDateTimeOffset(element, "DataHora"),
+                        Quantidade = GetDecimal(element, "Peso"),
+                        Tipo = GetString(element, "Tipo", ObterDetalhe(observacoes, "Tipo")),
+                        Fornecedor = GetString(element, "Fornecedor", ObterDetalhe(observacoes, "Fornecedor")),
+                        Lote = GetString(element, "Lote", ObterDetalhe(observacoes, "Lote")),
+                        DataFabricacao = GetString(element, "DataFabricacao", ObterDetalhe(observacoes, "Fab")),
+                        DataValidade = GetString(element, "DataValidade", ObterDetalhe(observacoes, "Val")),
+                        NotaFiscal = GetString(element, "NotaFiscal", ObterDetalhe(observacoes, "NF")),
+                        Sif = GetString(element, "Sif", ObterDetalhe(observacoes, "SIF"))
+                    });
+                }
+
+                if (registrosRecebidos == 0)
+                {
+                    break;
+                }
+
+                offset += registrosRecebidos;
+            }
         }
         catch (Exception ex)
         {
             return StatusCode(StatusCodes.Status502BadGateway,
-                "Não foi possível consultar o estoque: " + ex.Message);
+                "Não foi possível consultar os dados de matérias-primas: " + ex.Message);
         }
 
-        return View(materiasPrimas
-            .OrderBy(item => item.Nome, StringComparer.CurrentCultureIgnoreCase)
-            .ToList());
+        return View(new MateriaPrimaPaginaViewModel
+        {
+            Estoque = materiasPrimas
+                .OrderBy(item => item.Nome, StringComparer.CurrentCultureIgnoreCase)
+                .ToList(),
+            HistoricoEntradas = historicoEntradas
+        });
     }
 
     private static string? NormalizarCategoriaMateriaPrima(string categoria)
@@ -111,6 +163,22 @@ public class MateriaPrimaController : Controller
 
         string result = value.ToString().Trim();
         return string.IsNullOrWhiteSpace(result) ? fallback : result;
+    }
+
+    private static string ObterDetalhe(string observacoes, string campo)
+    {
+        foreach (string parte in observacoes.Split('|'))
+        {
+            int separador = parte.IndexOf(':');
+            if (separador >= 0 &&
+                parte[..separador].Trim().Equals(campo, StringComparison.OrdinalIgnoreCase))
+            {
+                string valor = parte[(separador + 1)..].Trim();
+                return string.IsNullOrWhiteSpace(valor) ? "-" : valor;
+            }
+        }
+
+        return "-";
     }
 
     private static long GetInt64(JsonElement element, string property)
@@ -165,6 +233,13 @@ public class MateriaPrimaController : Controller
     }
 }
 
+public sealed class MateriaPrimaPaginaViewModel
+{
+    public IReadOnlyList<MateriaPrimaViewModel> Estoque { get; set; } = Array.Empty<MateriaPrimaViewModel>();
+    public IReadOnlyList<HistoricoMateriaPrimaViewModel> HistoricoEntradas { get; set; } =
+        Array.Empty<HistoricoMateriaPrimaViewModel>();
+}
+
 public sealed class MateriaPrimaViewModel
 {
     public long Id { get; set; }
@@ -175,4 +250,19 @@ public sealed class MateriaPrimaViewModel
     public string Marca { get; set; } = "-";
     public string LoteFabricante { get; set; } = "-";
     public DateTimeOffset? AtualizadoEm { get; set; }
+}
+
+public sealed class HistoricoMateriaPrimaViewModel
+{
+    public long Id { get; set; }
+    public string Insumo { get; set; } = "-";
+    public string Tipo { get; set; } = "-";
+    public DateTimeOffset? DataHora { get; set; }
+    public decimal Quantidade { get; set; }
+    public string Fornecedor { get; set; } = "-";
+    public string Lote { get; set; } = "-";
+    public string DataFabricacao { get; set; } = "-";
+    public string DataValidade { get; set; } = "-";
+    public string NotaFiscal { get; set; } = "-";
+    public string Sif { get; set; } = "-";
 }
