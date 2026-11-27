@@ -1,9 +1,11 @@
 using System.Net.Http.Headers;
+using FabricaWebRender.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Adicionar serviços ao container (MVC)
 builder.Services.AddControllersWithViews();
+builder.Services.AddTransient<SupabaseEstoqueService>();
 
 var supabaseUrl = builder.Configuration["Supabase:Url"];
 if (!Uri.TryCreate(supabaseUrl, UriKind.Absolute, out var supabaseBaseUri) ||
