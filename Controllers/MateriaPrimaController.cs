@@ -47,9 +47,10 @@ public class MateriaPrimaController : Controller
                 {
                     registrosRecebidos++;
                     string categoria = GetString(element, "categoria");
+                    string? categoriaMateriaPrima = NormalizarCategoriaMateriaPrima(categoria);
                     decimal quantidade = GetDecimal(element, "quantidade");
 
-                    if (!EhMateriaPrima(categoria) || quantidade <= 0)
+                    if (categoriaMateriaPrima is null || quantidade <= 0)
                     {
                         continue;
                     }
@@ -59,7 +60,7 @@ public class MateriaPrimaController : Controller
                     {
                         Id = GetInt64(element, "id_insumo"),
                         Nome = GetString(element, "nome"),
-                        Categoria = categoria,
+                        Categoria = categoriaMateriaPrima,
                         Quantidade = quantidade,
                         UnidadeMedida = GetString(element, "unidade_medida", "KG"),
                         Marca = GetString(element, "marca", "-"),
@@ -87,10 +88,18 @@ public class MateriaPrimaController : Controller
             .ToList());
     }
 
-    private static bool EhMateriaPrima(string categoria)
+    private static string? NormalizarCategoriaMateriaPrima(string categoria)
     {
         string normalizada = RemoverAcentos(categoria).Trim();
-        return normalizada.Equals("materia prima", StringComparison.OrdinalIgnoreCase);
+        return normalizada.Equals("materia prima", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("leite", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("soro", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("leite desnatado", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("permeado", StringComparison.OrdinalIgnoreCase) ||
+               normalizada.Equals("descasque", StringComparison.OrdinalIgnoreCase) ||
+               string.IsNullOrWhiteSpace(normalizada)
+            ? "Matéria Prima"
+            : null;
     }
 
     private static string GetString(JsonElement element, string property, string fallback = "")
